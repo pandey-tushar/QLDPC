@@ -171,7 +171,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 👤 Author
 
-Your Name - your.email@example.com
+Tushar Pandey - tusharp@tamu.edu
 
 ## 🙏 Acknowledgments
 
