@@ -1,0 +1,78 @@
+{
+  "decoder_config": {
+    "bp_method": "min_sum",
+    "max_iter": 50,
+    "osd_method": "osd_cs",
+    "osd_order": 10
+  },
+  "erasure_rates": [
+    0.3,
+    0.31,
+    0.32,
+    0.33,
+    0.34,
+    0.35,
+    0.36,
+    0.37,
+    0.38,
+    0.39,
+    0.4,
+    0.41,
+    0.42
+  ],
+  "platform": {
+    "machine": "AMD64",
+    "release": "11",
+    "system": "Windows"
+  },
+  "python": {
+    "implementation": "CPython",
+    "version": "3.13.9"
+  },
+  "shots_per_point": 30000,
+  "sizes": [
+    {
+      "L": 12,
+      "M": 6,
+      "N": 144
+    },
+    {
+      "L": 18,
+      "M": 9,
+      "N": 324
+    },
+    {
+      "L": 24,
+      "M": 12,
+      "N": 576
+    }
+  ],
+  "tag": "",
+  "threshold_estimates": [
+    {
+      "K": 12,
+      "L": 12,
+      "M": 6,
+      "N": 144,
+      "p_at_target_wer": 0.38299440298507464,
+      "target_wer": 0.1
+    },
+    {
+      "K": 8,
+      "L": 18,
+      "M": 9,
+      "N": 324,
+      "p_at_target_wer": null,
+      "target_wer": 0.1
+    },
+    {
+      "K": 16,
+      "L": 24,
+      "M": 12,
+      "N": 576,
+      "p_at_target_wer": null,
+      "target_wer": 0.1
+    }
+  ],
+  "timestamp_utc": "20251224T165936Z"
+}
