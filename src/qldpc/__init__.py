@@ -10,6 +10,7 @@ __version__ = "0.1.0"
 from .code import BivariateBicycleCode
 from .simulator import QuantumSimulator
 from .decoder import DecoderConfig
+from .toric_code import ToricCode
 
-__all__ = ["BivariateBicycleCode", "QuantumSimulator", "DecoderConfig"]
+__all__ = ["BivariateBicycleCode", "QuantumSimulator", "DecoderConfig", "ToricCode"]
 

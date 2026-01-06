@@ -20,7 +20,6 @@ parts/
 sdist/
 var/
 wheels/
-pip-wheel-metadata/
 share/python-wheels/
 *.egg-info/
 .installed.cfg
@@ -48,6 +47,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+cover/
 
 # Translations
 *.mo
@@ -70,6 +70,7 @@ instance/
 docs/_build/
 
 # PyBuilder
+.pybuilder/
 target/
 
 # Jupyter Notebook
@@ -122,23 +123,27 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# IDE
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# IDEs
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
-# OS
 .DS_Store
+
+# OS-specific
 Thumbs.db
+.DS_Store
+*.bak
 
-# Project specific
-# Keep result summaries (CSV/JSON) versionable; ignore bulky/binary artifacts if you add them later.
-results/**/*.npz
-results/**/*.npy
-results/**/*.pkl
-results/**/*.h5
-results/**/*.hdf5
-results/**/*.parquet
-
+# Project-specific
+# Uncomment these if you don't want to track results
+# results/*.csv
+# results/*.json
+# results/*.png

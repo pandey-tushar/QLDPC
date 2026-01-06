@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.7"
 license = {text = "MIT"}
 authors = [
-    {name = "Your Name", email = "your.email@example.com"}
+    {name = "Tushar Pandey", email = "tusharp@tamu.edu"}
 ]
 keywords = ["quantum", "error correction", "LDPC", "simulation"]
 classifiers = [
@@ -29,6 +29,8 @@ dependencies = [
     "scipy>=1.7.0",
     "ldpc>=0.1.0",
     "bposd>=0.1.0",
+    "pymatching>=2.0.0",
+    "matplotlib>=3.5.0",
 ]
 
 [project.optional-dependencies]
@@ -38,9 +40,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/QLDPC"
-Repository = "https://github.com/yourusername/QLDPC"
-Issues = "https://github.com/yourusername/QLDPC/issues"
+Homepage = "https://github.com/tusharpandey13/QLDPC"
+Repository = "https://github.com/tusharpandey13/QLDPC"
+Issues = "https://github.com/tusharpandey13/QLDPC/issues"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

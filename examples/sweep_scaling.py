@@ -293,6 +293,7 @@ def main() -> int:
                 pts.append((p, wer))
                 rows.append(
                     {
+                        "family": "bivariate_bicycle",
                         "L": L,
                         "M": M,
                         "N": int(2 * L * M),
@@ -318,6 +319,7 @@ def main() -> int:
                 pts.append((p, r["wer"]))
                 rows.append(
                     {
+                        "family": "bivariate_bicycle",
                         "L": L,
                         "M": M,
                         "N": int(2 * L * M),
@@ -343,7 +345,7 @@ def main() -> int:
         )
 
     # Write CSV
-    fieldnames = ["L", "M", "N", "K", "p", "shots", "fails", "wer", "seconds"]
+    fieldnames = ["family", "L", "M", "N", "K", "p", "shots", "fails", "wer", "seconds"]
     with csv_path.open("w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=fieldnames)
         w.writeheader()

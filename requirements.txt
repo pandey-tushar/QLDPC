@@ -2,4 +2,5 @@ numpy>=1.21.0
 scipy>=1.7.0
 ldpc>=0.1.0
 bposd>=0.1.0
-
+pymatching>=2.0.0
+matplotlib>=3.5.0
