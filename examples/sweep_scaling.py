@@ -15,12 +15,11 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import os
 import platform
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import sys
 
@@ -58,7 +57,7 @@ def frange(start: float, stop: float, step: float) -> List[float]:
     return vals
 
 
-def estimate_p_at_target_wer(points: List[Tuple[float, float]], target_wer: float) -> float | None:
+def estimate_p_at_target_wer(points: List[Tuple[float, float]], target_wer: float) -> Optional[float]:
     """
     Given (p, wer) sorted by p, return interpolated p where wer crosses target_wer.
     Returns None if it never crosses within range.
@@ -84,14 +83,15 @@ def adaptive_find_crossing(
     refine_steps: int,
     pool,
     prepared: bool,
+    seed: Optional[int],
 ):
     """
     Bracket the crossing (WER crosses target_wer) by stepping p upward,
     then refine by bisection.
 
     Returns:
-      - sampled_points: List[(p, wer, fails, shots, seconds)]
-      - p_at_target: float | None
+      - sampled_points: List[(p, wer, fails, shots, seconds, worker_seeds)]
+      - p_at_target: Optional[float]
     """
     sampled = []
     cache = {}
@@ -100,8 +100,11 @@ def adaptive_find_crossing(
         p = float(round(p, 10))
         if p in cache:
             return cache[p]
-        r = sim.run_point_prepared(p, shots, pool=pool) if prepared else sim.run_point(p, shots, pool=pool)
-        row = (p, r["wer"], int(r["fails"]), int(r["shots"]), float(r["seconds"]))
+        if prepared:
+            r = sim.run_point_prepared(p, shots, pool=pool, seed=seed)
+        else:
+            r = sim.run_point(p, shots, pool=pool, seed=seed)
+        row = (p, r["wer"], int(r["fails"]), int(r["shots"]), float(r["seconds"]), r.get("worker_seeds"))
         cache[p] = row
         sampled.append(row)
         # Progress line (adaptive mode can have long per-point runtimes)
@@ -155,6 +158,7 @@ def main() -> int:
     parser.add_argument("--p-max", type=float, default=0.42, help="Max erasure rate (also adaptive max)")
     parser.add_argument("--p-step", type=float, default=0.01, help="Erasure rate step (non-adaptive mode)")
     parser.add_argument("--cores", type=int, default=None, help="Override core count (default: cpu_count()-1)")
+    parser.add_argument("--seed", type=int, default=None, help="Base RNG seed for reproducibility (default: None)")
 
     # Decoder knobs
     parser.add_argument("--bp-method", type=str, default="min_sum")
@@ -224,6 +228,17 @@ def main() -> int:
         max_iter=args.max_iter,
     )
 
+    def safe_pkg_version(name: str) -> Optional[str]:
+        try:
+            from importlib import metadata
+            return metadata.version(name)
+        except Exception:
+            try:
+                import pkg_resources
+                return pkg_resources.get_distribution(name).version
+            except Exception:
+                return None
+
     # Metadata
     meta = {
         "timestamp_utc": stamp,
@@ -232,6 +247,7 @@ def main() -> int:
         "erasure_rates": erasure_rates,
         "sizes": [{"L": L, "M": M, "N": 2 * L * M} for (L, M) in args.sizes],
         "decoder_config": asdict(config),
+        "seed": args.seed,
         "python": {
             "version": platform.python_version(),
             "implementation": platform.python_implementation(),
@@ -241,13 +257,22 @@ def main() -> int:
             "release": platform.release(),
             "machine": platform.machine(),
         },
+        "package_versions": {
+            "numpy": safe_pkg_version("numpy"),
+            "scipy": safe_pkg_version("scipy"),
+            "ldpc": safe_pkg_version("ldpc"),
+            "bposd": safe_pkg_version("bposd"),
+            "pymatching": safe_pkg_version("pymatching"),
+            "matplotlib": safe_pkg_version("matplotlib"),
+        },
     }
 
     rows = []
+    seed_map = []
 
     for (L, M) in args.sizes:
         code = BivariateBicycleCode(L=L, M=M)
-        sim = QuantumSimulator(code, config=config, num_cores=args.cores)
+        sim = QuantumSimulator(code, config=config, num_cores=args.cores, seed=args.seed)
 
         # We can infer K (encoded qubits) by creating the decoder once (cheap compared to full sweep)
         # but keep it optional to avoid hard-failing if upstream API changes.
@@ -286,10 +311,11 @@ def main() -> int:
                 refine_steps=int(args.refine_steps),
                 pool=pool,
                 prepared=True,
+                seed=args.seed,
             )
             pool.close()
             pool.join()
-            for (p, wer, fails, shots, seconds) in sampled:
+            for (p, wer, fails, shots, seconds, worker_seeds) in sampled:
                 pts.append((p, wer))
                 rows.append(
                     {
@@ -305,6 +331,15 @@ def main() -> int:
                         "seconds": float(seconds),
                     }
                 )
+                if worker_seeds is not None:
+                    seed_map.append(
+                        {
+                            "L": int(L),
+                            "M": int(M),
+                            "p": float(p),
+                            "worker_seeds": list(worker_seeds),
+                        }
+                    )
         else:
             # Non-adaptive mode: use existing implementation (one pool per experiment)
             results = sim.run_experiment(
@@ -312,11 +347,22 @@ def main() -> int:
                 total_shots=args.shots,
                 verbose=True,
                 return_details=True,
+                return_seeds=True,
+                seed=args.seed,
             )
 
             for p in erasure_rates:
                 r = results[p]
                 pts.append((p, r["wer"]))
+                if "worker_seeds" in r:
+                    seed_map.append(
+                        {
+                            "L": int(L),
+                            "M": int(M),
+                            "p": float(p),
+                            "worker_seeds": list(r["worker_seeds"]),
+                        }
+                    )
                 rows.append(
                     {
                         "family": "bivariate_bicycle",
@@ -353,6 +399,8 @@ def main() -> int:
             w.writerow(row)
 
     # Write metadata JSON
+    if seed_map:
+        meta["seed_map"] = seed_map
     with meta_path.open("w", encoding="utf-8") as f:
         json.dump(meta, f, indent=2, sort_keys=True)
 

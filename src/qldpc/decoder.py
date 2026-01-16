@@ -5,7 +5,7 @@ Provides configuration and wrapper for BP-OSD decoders.
 """
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Tuple
 import numpy as np
 import warnings
 from scipy.sparse import issparse
@@ -55,29 +55,60 @@ def create_decoder(hx, hz, config: DecoderConfig, initial_error_rate: float = 0.
     tuple
         (css_code object, bposd_decoder object)
     """
+    qcode, bpd_x, _ = create_decoders(hx, hz, config, initial_error_rate)
+    return qcode, bpd_x
+
+
+def create_decoders(
+    hx,
+    hz,
+    config: DecoderConfig,
+    initial_error_rate: float = 0.1,
+) -> Tuple[css_code, bposd_decoder, bposd_decoder]:
+    """
+    Create decoders for both X and Z error components.
+
+    Returns
+    -------
+    tuple
+        (css_code object, bpd_x, bpd_z) where:
+        - bpd_x decodes X errors using Hz checks
+        - bpd_z decodes Z errors using Hx checks
+    """
     # Convert sparse matrices to dense arrays if needed
     # bposd.css_code requires dense arrays for logical operator computation
     if issparse(hx):
         hx = hx.toarray().astype(int)
     if issparse(hz):
         hz = hz.toarray().astype(int)
-    
+
     # Create CSS code object (computes logical operators automatically)
     qcode = css_code(hx=hx, hz=hz)
-    
-    # Create BP-OSD decoder
+
+    # Create BP-OSD decoders
     # Suppress deprecation warning for bposd_decoder (legacy API still works)
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=UserWarning, 
-                                message=".*old syntax for the `bposd_decoder`.*")
-        bpd = bposd_decoder(
+        warnings.filterwarnings(
+            "ignore",
+            category=UserWarning,
+            message=".*old syntax for the `bposd_decoder`.*",
+        )
+        bpd_x = bposd_decoder(
             qcode.hz,
             error_rate=initial_error_rate,
             bp_method=config.bp_method,
             osd_method=config.osd_method,
             osd_order=config.osd_order,
-            max_iter=config.max_iter
+            max_iter=config.max_iter,
         )
-    
-    return qcode, bpd
+        bpd_z = bposd_decoder(
+            qcode.hx,
+            error_rate=initial_error_rate,
+            bp_method=config.bp_method,
+            osd_method=config.osd_method,
+            osd_order=config.osd_order,
+            max_iter=config.max_iter,
+        )
+
+    return qcode, bpd_x, bpd_z
 

@@ -20,12 +20,13 @@ import argparse
 import csv
 import json
 import math
-from dataclasses import asdict
+import platform
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Optional
 
 import numpy as np
+from numpy.random import SeedSequence
 import pymatching
 
 import sys
@@ -46,7 +47,7 @@ def frange(start: float, stop: float, step: float) -> List[float]:
     return vals
 
 
-def estimate_p_at_target(points: List[Tuple[float, float]], target: float) -> float | None:
+def estimate_p_at_target(points: List[Tuple[float, float]], target: float) -> Optional[float]:
     pts = sorted(points, key=lambda t: t[0])
     for (p0, w0), (p1, w1) in zip(pts, pts[1:]):
         if (w0 - target) * (w1 - target) <= 0 and w0 != w1:
@@ -101,6 +102,7 @@ def main() -> int:
     parser.add_argument("--p-step", type=float, default=0.02)
     parser.add_argument("--target-wer", type=float, default=0.10)
     parser.add_argument("--tag", type=str, default="surface_mwpm", help="Tag for output filenames")
+    parser.add_argument("--seed", type=int, default=None, help="Base RNG seed for reproducibility (default: None)")
     args = parser.parse_args()
 
     Ls = [int(x.strip()) for x in args.Ls.split(",") if x.strip()]
@@ -112,8 +114,20 @@ def main() -> int:
     csv_path = out_dir / f"baseline_surface_{stamp}_{args.tag}.csv"
     json_path = out_dir / f"baseline_surface_{stamp}_{args.tag}.json"
 
+    def safe_pkg_version(name: str) -> Optional[str]:
+        try:
+            from importlib import metadata
+            return metadata.version(name)
+        except Exception:
+            try:
+                import pkg_resources
+                return pkg_resources.get_distribution(name).version
+            except Exception:
+                return None
+
     rows = []
     threshold_estimates = []
+    seed_map = []
 
     for L in Ls:
         pts = []
@@ -121,7 +135,12 @@ def main() -> int:
         print(f"\n=== TORIC SURFACE BASELINE === L={L}  N={N}  shots={args.shots}")
         for p in ps:
             start = datetime.now()
-            r = run_mwpm_point(L=L, p_erasure=float(p), shots=int(args.shots), seed=np.random.randint(1_000_000_000))
+            if args.seed is None:
+                seed = int(SeedSequence().generate_state(1, dtype=np.uint32)[0])
+            else:
+                p_key = int(round(float(p) * 1_000_000_000))
+                seed = int(SeedSequence([int(args.seed), int(L), p_key]).generate_state(1, dtype=np.uint32)[0])
+            r = run_mwpm_point(L=L, p_erasure=float(p), shots=int(args.shots), seed=seed)
             sec = (datetime.now() - start).total_seconds()
             print(f"  p={p:.4f}  WER={r['wer']:.5f}  fails={r['fails']}/{r['shots']}  sec={sec:.2f}")
             pts.append((float(p), float(r["wer"])))
@@ -137,6 +156,13 @@ def main() -> int:
                     "fails": int(r["fails"]),
                     "wer": float(r["wer"]),
                     "seconds": float(sec),
+                }
+            )
+            seed_map.append(
+                {
+                    "L": int(L),
+                    "p": float(p),
+                    "seed": int(seed),
                 }
             )
 
@@ -159,10 +185,30 @@ def main() -> int:
         "shots_per_point": int(args.shots),
         "p_grid": ps,
         "Ls": Ls,
+        "seed": args.seed,
         "target_wer": float(args.target_wer),
         "threshold_estimates": threshold_estimates,
         "note": "This baseline uses MWPM with q=p/2 and does not condition on per-shot erasure locations.",
+        "platform": {
+            "system": platform.system(),
+            "release": platform.release(),
+            "machine": platform.machine(),
+        },
+        "python": {
+            "version": platform.python_version(),
+            "implementation": platform.python_implementation(),
+        },
+        "package_versions": {
+            "numpy": safe_pkg_version("numpy"),
+            "scipy": safe_pkg_version("scipy"),
+            "ldpc": safe_pkg_version("ldpc"),
+            "bposd": safe_pkg_version("bposd"),
+            "pymatching": safe_pkg_version("pymatching"),
+            "matplotlib": safe_pkg_version("matplotlib"),
+        },
     }
+    if seed_map:
+        meta["seed_map"] = seed_map
     with json_path.open("w", encoding="utf-8") as f:
         json.dump(meta, f, indent=2, sort_keys=True)
 
@@ -170,12 +216,13 @@ def main() -> int:
     print(f"Saved JSON: {json_path}")
     print("Approx p@target_wer:")
     for e in threshold_estimates:
-        print(f"  L={e['L']} N={e['N']}: p@WER={e['target_wer']:.3f} ≈ {e['p_at_target_wer']}")
+        print(f"  L={e['L']} N={e['N']}: p@WER={e['target_wer']:.3f} ~ {e['p_at_target_wer']}")
 
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
 
 

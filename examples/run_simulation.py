@@ -82,6 +82,12 @@ Examples:
         default=None,
         help="Comma-separated erasure rates to test (overrides presets), e.g. --rates 0.1,0.12,0.2"
     )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Base RNG seed for reproducibility (default: None)",
+    )
     
     args = parser.parse_args()
     
@@ -97,7 +103,7 @@ Examples:
     )
     
     # Create Simulator
-    simulator = QuantumSimulator(code, config=config)
+    simulator = QuantumSimulator(code, config=config, seed=args.seed)
     
     # Run Experiment
     if args.rates is not None:
@@ -111,7 +117,8 @@ Examples:
     results = simulator.run_experiment(
         erasure_rates=erasure_rates,
         total_shots=total_shots,
-        verbose=True
+        verbose=True,
+        seed=args.seed,
     )
     
     # Print summary

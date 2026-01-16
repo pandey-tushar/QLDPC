@@ -22,6 +22,7 @@ For a typical simulation run with **50,000 shots** on a **16-core machine**:
   - Erasure rate (p): higher p → more errors → longer BP-OSD decoding
   - OSD order: higher order = more accurate but slower
 - Memory is dominated by sparse matrix storage and worker process overhead
+- Current simulator decodes both X and Z sectors; if comparing with older X-only runs, expect ~2× runtime
 
 ### Full Scaling Sweep
 
@@ -271,4 +272,5 @@ print(f"Syndrome: {(t1-t0)*1000:.2f}ms, Decode: {(t2-t1)*1000:.2f}ms")
 ---
 
 *Last updated: 2025-12-25*
+
 

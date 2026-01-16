@@ -36,7 +36,7 @@ def load_json(path: Path) -> Dict[str, Any]:
         return json.load(f)
 
 
-def maybe_matching_json(csv_path: Path) -> Path | None:
+def maybe_matching_json(csv_path: Path) -> Optional[Path]:
     j = csv_path.with_suffix(".json")
     return j if j.exists() else None
 
