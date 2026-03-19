@@ -24,29 +24,23 @@ for Bivariate Bicycle Codes on the Quantum Erasure Channel}
 \maketitle
 
 \begin{abstract}
-We establish a methodological standard for fair threshold estimation of bivariate bicycle
-(BB) codes on the quantum erasure channel, addressing two systematic issues common in the
-QLDPC simulation literature: decoder-baseline unfairness and the conflation of finite-size
-pseudo-thresholds with true asymptotic thresholds.
-We implement both uninformed and \emph{erasure-aware} minimum-weight perfect matching (MWPM)
-surface code baselines and show that, under standard depolarizing-weight MWPM without erasure
-information, performance empirically matches random guessing on the erasure channel within our
-tested regime, confirming that prior comparisons using this baseline measure decoder quality
-rather than code quality.
-Under the fair erasure-aware comparison, a Monte Carlo framework with belief propagation and
-ordered statistics decoding (BP-OSD) is applied to five BB code sizes from $N=144$ to
-$N=1296$ physical qubits at 200{,}000 shots per point with rigorous bootstrap confidence
-intervals.
-Finite-size pseudo-thresholds (WER = 0.10 crossings) scale from $p^* = 0.370$ to $0.471$;
-finite-size scaling (FSS) analysis extrapolates an asymptotic threshold of
-$p^*_\infty \approx 0.488$---within 2.4\% of the zero-rate limit, achieved by BP-OSD
-without maximum-likelihood decoding.
-Under the fair baseline, BB codes at $N=1296$ achieve a modest threshold advantage
-($\Delta p^* \approx 0.011$) over surface codes at twice the physical qubit count, while
-requiring 12$\times$ fewer physical qubits per logical qubit---a reduction in normalized
-overhead that constitutes the primary practical case for BB codes within this comparison
-setting.
-All simulations are fully reproducible with recorded random seeds and package versions.
+Fair threshold estimation for bivariate bicycle (BB) codes on the quantum erasure channel
+runs into two recurring problems: decoder-baseline unfairness and the conflation of
+finite-size pseudo-thresholds with true asymptotic thresholds.
+We run both uninformed and \emph{erasure-aware} minimum-weight perfect matching (MWPM)
+surface code baselines alongside BP-OSD decoding of BB codes.
+With standard depolarizing-weight MWPM and no erasure information, performance matches
+random guessing on the erasure channel in our tested regime---so prior work that compares
+against this baseline is really comparing decoders, not codes.
+Using 200{,}000 shots per point and bootstrap confidence intervals, we sweep five BB code
+sizes from $N=144$ to $N=1296$.
+Pseudo-thresholds (WER = 0.10) run from $p^* = 0.370$ to $0.471$; finite-size scaling
+(FSS) gives an asymptotic threshold $p^*_\infty \approx 0.488$, within 2.4\% of the
+zero-rate limit and without maximum-likelihood decoding.
+On the fair baseline, BB at $N=1296$ has a modest edge in threshold over the surface code
+at twice the qubit count, and a 12$\times$ lower normalized overhead---the latter is
+where the practical advantage sits.
+All runs are reproducible from recorded seeds and package versions.
 \end{abstract}
 
 \section{Introduction}
@@ -63,59 +57,36 @@ demonstrated strong threshold properties on erasure channels.
 The erasure channel is a natural benchmark for quantum codes because error \emph{locations} are
 known (e.g., via measurement flagging \cite{grassl2004codes}), allowing erasure-informed decoders
 to achieve near-optimal performance.
-A persistent challenge in comparing code families is that unfair decoder choices can artificially
-inflate apparent advantages.
-In this work we address this directly by implementing and reporting both an uninformed and an
-erasure-aware MWPM surface code baseline alongside BP-OSD decoding of BB codes.
+Unfair decoder choices can inflate apparent code advantages, so we run both an uninformed
+and an erasure-aware MWPM surface baseline alongside BP-OSD decoding of BB codes.
+We also separate \emph{finite-size pseudo-thresholds} (WER-crossing at a fixed target WER)
+from true asymptotic thresholds via finite-size scaling (FSS); our extrapolated
+$p^*_\infty \approx 0.488$ sits within 2.4\% of the zero-rate limit under BP-OSD, without
+maximum-likelihood decoding.
 
-We also address a common conflation in the literature between \emph{finite-size pseudo-thresholds}
-(WER-crossing points at a fixed target WER) and true asymptotic thresholds.
-We perform finite-size scaling (FSS) analysis to extract the latter rigorously.
-Our extrapolated threshold $p^*_\infty \approx 0.488$ approaches within 2.4\% of the
-zero-rate limit under BP-OSD decoding, without requiring maximum-likelihood decoding.
+In short: we give a reproducible Monte Carlo setup (200k shots per point, bootstrap 95\%
+CIs $\lesssim 0.001$ on $p^*$, with seeds and versions recorded) and a full FSS treatment
+for this BB family ($p^*_\infty \approx 0.488$, $\nu \approx 1.18$, plus fit-window and
+corrections-to-scaling checks).
+We also provide a fair comparison to erasure-aware MWPM surface codes---a 12$\times$
+overhead reduction for BB at comparable threshold---and show that uninformed MWPM on the
+erasure channel matches random guessing in our regime, so that baseline should not be
+used to compare codes.
+Comparisons between BB and surface codes are not architecture-neutral: BB is non-local,
+surface codes are local, and we interpret our overhead and threshold numbers as
+\emph{code efficiency} in a code-capacity setting, not as hardware blueprints.
 
-Our main contributions are:
-\begin{itemize}
-    \item A reproducible Monte Carlo framework with full X+Z sector decoding and 200{,}000
-          shots per point, yielding bootstrap 95\% CIs of $\lesssim 0.001$ on pseudo-thresholds.
-          Full reproducibility is enforced via seed tracking, per-point worker seeds, pinned
-          package versions, and JSON metadata files---a level of rigor uncommon in the QLDPC
-          simulation literature.
-    \item A systematic FSS analysis of BB codes on the erasure channel, giving
-          $p^*_\infty \approx 0.488$ (statistical CI $\pm 0.001$; estimated systematic
-          uncertainty $\lesssim 0.005$) and $\nu \approx 1.18$, with explicit treatment of
-          corrections-to-scaling and fit-window sensitivity.
-    \item A fair comparison to erasure-aware MWPM surface codes showing a 12$\times$
-          reduction in normalized overhead for BB codes at comparable threshold, within
-          this comparison setting.
-    \item An explicit erasure-aware fairness correction showing that, under standard
-          depolarizing-weight MWPM without erasure information, surface code baselines
-          empirically match random guessing within our tested regime---a result that should
-          disqualify this baseline as a primary comparison metric in erasure-channel studies.
-\end{itemize}
-
-Throughout this work we emphasize that comparisons between BB and surface codes are not
-architecture-neutral: BB codes are non-local and require long-range qubit connectivity,
-whereas surface codes are geometrically local and implementable with nearest-neighbor
-interactions.
-The overhead and threshold comparisons should therefore be interpreted as measures of
-\emph{code efficiency} within the code-capacity setting, not as direct hardware-level claims.
-
-Several recent works study BB codes under erasure or erasure-biased noise, including
+Recent work on BB codes under erasure or erasure-biased noise includes
 Pecorari and Pupillo \cite{pecorari2025qldpc}, Bhave et al.\ \cite{bhave2026bibi}, and
-Berthusen et al.\ \cite{berthusen2025local}.
-Improved decoders for QLDPC codes on related noise models have been investigated by
+Berthusen et al.\ \cite{berthusen2025local}; decoder improvements appear in
 Hillmann et al.\ \cite{hillmann2025lsd}, Liang et al.\ \cite{liang2025bposd},
 Ott et al.\ \cite{ott2025decision}, Yin et al.\ \cite{yin2024symmetry}, and
-Gong et al.\ \cite{gong2024bpdecoding}; limitations of BP-based approaches are discussed in
+Gong et al.\ \cite{gong2024bpdecoding}, with BP limitations discussed in
 iOlius et al.\ \cite{iolius2024bp}.
-Additional BB code constructions and families are analyzed by Rabeti and Mahdavifar
-\cite{rabeti2025bicycle}.
-Relative to this body of work, our study is distinguished by: (i) an explicit erasure-aware
-fairness correction that resolves a systematic baseline error common in prior comparisons;
-(ii) full bootstrap statistical uncertainty at 200{,}000 shots per point; (iii) FSS with
-separate statistical and systematic uncertainty budgets; and (iv) exact reproducibility via
-seed and version tracking.
+Rabeti and Mahdavifar \cite{rabeti2025bicycle} analyze further BB families.
+What sets this study apart is the erasure-aware fairness correction, full bootstrap
+uncertainty at 200k shots, FSS with separate stat/sys uncertainty, and reproducible
+seeds and versions throughout.
 
 \section{Methods}
 
@@ -130,9 +101,9 @@ A &= x^3 + y + y^2, \qquad B = y^3 + x + x^2,
 \end{align}
 with parity check matrices $H_x = [A \mid B]$ and $H_z = [B^T \mid A^T]$.
 The $[[144,12,12]]$ Gross code corresponds to $(L,M) = (12,6)$.
-This family was chosen because it is the primary BB code studied in Bravyi et al.\
-\cite{bravyi2024high} and subsequent literature, making it the natural benchmark for
-comparison; results may differ for other polynomial pairs (see Sec.~\ref{sec:limitations}).
+We stick to this family because it is the one used in Bravyi et al.\ \cite{bravyi2024high}
+and most follow-up work; other polynomial pairs can behave differently
+(Sec.~\ref{sec:limitations}).
 
 \subsection{Simulation Framework}
 
@@ -180,12 +151,12 @@ where $\nu$ is the correlation-length critical exponent and $f$ is a universal s
 We approximate $f$ by a degree-3 polynomial and minimize the residual sum of squares over
 $(p^*_\infty, \nu)$ using the per-size WER data within a window $|p - p^*| < 0.06$.
 Bootstrap CIs are obtained from 500 resampled datasets.
-We do not claim universality of the polynomial ansatz; rather, it serves as a low-order
-phenomenological model consistent with standard FSS practice, and its adequacy is assessed
-through fit-window sensitivity and the independent linearized check described below.
+The polynomial is a low-order phenomenological model, in line with usual FSS practice---we
+do not claim universality, and we check adequacy via fit-window sensitivity and a
+linearized fit below.
 
-This leading-order FSS ansatz assumes that corrections-to-scaling are negligible at the
-system sizes studied ($N \leq 1296$), which is an uncontrolled approximation.
+Corrections-to-scaling are assumed small at $N \leq 1296$; we cannot rule out larger
+corrections at these sizes.
 To assess sensitivity, we repeat the fit with windows $|p - p^*| < 0.04$ and
 $|p - p^*| < 0.08$ and find that $p^*_\infty$ shifts by $\lesssim 0.004$, consistent with
 our stated systematic uncertainty of $\lesssim 0.005$.
@@ -208,14 +179,14 @@ forcing corrections through known erasure locations.
 Matching objects are rebuilt per shot to enforce the weight assignment exactly.
 Both X and Z sectors are decoded independently; WER is defined identically to the BB code
 evaluation.
-This is the fair comparison: both decoders exploit erasure locations.
+Both sides then use erasure locations; that is the fair comparison.
 
 \section{Results}
 
 \subsection{Pseudo-Threshold Scaling}
 
-Table~\ref{tab:thresholds} reports pseudo-thresholds for five BB code sizes with 95\% bootstrap
-confidence intervals from 5{,}000 resampling iterations.
+Table~\ref{tab:thresholds} gives pseudo-thresholds for the five BB sizes, with 95\%
+bootstrap CIs from 5{,}000 resampling iterations.
 
 \begin{table}[h]
 \centering
@@ -236,32 +207,29 @@ $36{\times}18$ & 1296 & 12 & 0.009 & $0.4706\ [0.4705,\ 0.4707]$ \\
 \end{tabular}
 \end{table}
 
-The pseudo-threshold grows with code size, from $p^* = 0.370$ at $N=144$ to $p^* = 0.471$ at
-$N=1296$ (absolute gain of 0.101).
-The rate of improvement diminishes, with only a 0.004 gain from $N=900$ to $N=1296$, consistent
-with approach to the asymptotic limit quantified by FSS below.
+$p^*$ grows with size---0.370 at $N=144$ to 0.471 at $N=1296$ (gain 0.101).
+The gain from $N=900$ to $N=1296$ is only 0.004, which fits an approach to the asymptotic
+limit (FSS below).
 
 \subsection{Finite-Size Scaling and Asymptotic Threshold}\label{sec:fss_results}
 
-Fitting the FSS ansatz (degree-3 polynomial scaling function) to all five code sizes yields:
+Fitting the degree-3 polynomial FSS ansatz to all five sizes gives
 \begin{align}
     p^*_\infty &= 0.488 \pm 0.001 \quad (95\%\ \text{bootstrap CI}), \\
     \nu         &= 1.18  \pm 0.01  \quad (95\%\ \text{bootstrap CI}).
 \end{align}
-The statistical uncertainty reflects bootstrap resampling variance only; systematic errors
-from the polynomial scaling ansatz and finite-size corrections are not fully controlled but
-are estimated $\lesssim 0.005$ from fit-window sensitivity tests (Sec.~\ref{sec:fss}),
-leaving the headline result robust.
-The asymptotic threshold $p^*_\infty = 0.488$ is meaningfully higher than the largest
-finite-size crossing ($p^* = 0.471$ at $N=1296$), demonstrating that naive extrapolation from
-finite-size data underestimates the true threshold.
-The critical exponent $\nu \approx 1.18$ is consistent with a second-order phase transition;
-its relation to the known value $\nu = 4/3$ for random-bond Ising universality
-\cite{dennis2002topological} is discussed in Sec.~\ref{sec:critical_exponent}.
+Bootstrap gives the statistical error; systematics from the ansatz and finite-size
+corrections are not fully controlled but fit-window tests (Sec.~\ref{sec:fss}) suggest
+$\lesssim 0.005$, so the headline number holds.
+$p^*_\infty = 0.488$ is noticeably above the best finite-size crossing (0.471 at $N=1296$)---so
+stopping at finite size would underestimate the threshold.
+$\nu \approx 1.18$ is consistent with a second-order transition; how it relates to
+$\nu = 4/3$ for random-bond Ising \cite{dennis2002topological} is in
+Sec.~\ref{sec:critical_exponent}.
 
-Figure~\ref{fig:fss_collapse} shows the data collapse; all five WER curves visually collapse
-onto a single master curve under the rescaled variable $(p - p^*_\infty) N^{1/\nu}$.
-Figure~\ref{fig:fss_linear} provides an independent check via a linearised FSS plot:
+In Fig.~\ref{fig:fss_collapse}, the five WER curves collapse onto one master curve under
+$(p - p^*_\infty) N^{1/\nu}$.
+Fig.~\ref{fig:fss_linear} checks this with a linearised FSS plot:
 if $p^*(N) \approx p^*_\infty + c \cdot N^{-1/\nu}$, a plot of $p^*$ vs $N^{-1/\nu}$
 should be linear with intercept $p^*_\infty$.
 The linear fit gives $p^*_\infty = 0.490 \pm 0.003$, consistent with the nonlinear fit and
@@ -292,12 +260,10 @@ independent consistency check.}
 
 \subsection{Rate--Threshold Trade-off}
 
-Figure~\ref{fig:rate_threshold} shows encoding rate $K/N$ vs pseudo-threshold $p^*$ for all
-BB code sizes alongside erasure-aware surface codes.
-The Shannon limit $K/N = 1 - p$ (dashed) represents the maximum rate achievable at threshold $p$.
-BB codes with larger $N$ have lower rates but higher thresholds, tracing a clear Pareto frontier.
-Surface codes (all with $K/N \approx 0.003$--$0.007$) lie below the BB codes on threshold
-at comparable rates, highlighting the efficiency of BB codes.
+Encoding rate vs $p^*$ for all BB sizes and erasure-aware surface codes appears in
+Fig.~\ref{fig:rate_threshold}; the dashed line is the Shannon limit $K/N = 1 - p$.
+Larger BB codes trade rate for threshold along a clear Pareto frontier; surface codes
+($K/N \approx 0.003$--$0.007$) sit below on threshold at comparable rates.
 
 \begin{figure}[ht]
 \centering
@@ -311,9 +277,8 @@ BB codes trace a Pareto frontier with higher rates at lower $p^*$ or lower rates
 
 \subsection{WER Curves and Comparison to Surface Codes}
 
-Figure~\ref{fig:wer_curves} shows WER vs.\ erasure rate for BB codes alongside both surface
-code baselines.
-Table~\ref{tab:baseline} compares pseudo-thresholds at matched or comparable code sizes.
+WER vs.\ erasure rate for BB and both surface baselines is in Fig.~\ref{fig:wer_curves};
+Table~\ref{tab:baseline} compares pseudo-thresholds at matched sizes.
 
 \begin{table}[h]
 \centering
@@ -338,35 +303,27 @@ Surface (uninformed MWPM) & --- & --- & ${\lesssim}0.30$ \\
 \end{tabular}
 \end{table}
 
-The uninformed MWPM baseline shows WER $\approx 0.75$ throughout $p = 0.30$--$0.60$,
-essentially flat and independent of erasure rate.
-For $K=2$ logical qubits, a completely random decoder gives WER $= 1 - (1/2)^2 = 0.75$;
-under standard depolarizing-weight MWPM without erasure information, performance empirically
-matches this random-guessing level across the entire tested regime.
-The underlying mechanism is degeneracy: without knowledge of which qubits were erased,
-constant-weight MWPM cannot distinguish among the many equally likely error configurations
-consistent with a given syndrome, effectively reducing to random correction on the erasure
-channel.
-Note that this behavior is specific to our decoder construction and logical definition ($K=2$);
-slightly different weight assignments or graph constructions may shift the WER, but the core
-issue---that erasure location information is discarded---remains.
-This confirms that comparisons between BB codes and uninformed MWPM measure decoder quality
-rather than code quality, and should not be used as a primary comparison metric.
+The uninformed MWPM baseline sits at WER $\approx 0.75$ across $p = 0.30$--$0.60$, almost
+flat.
+For $K=2$, random guessing gives WER $= 1 - (1/2)^2 = 0.75$; with standard depolarizing
+weights and no erasure information, MWPM matches that in our regime.
+Reason: without knowing which qubits were erased, constant-weight MWPM faces a degenerate
+syndrome---many error patterns look the same---so it effectively guesses.
+Details depend on our graph and $K=2$; other setups could shift the WER slightly, but
+discarding erasure locations remains the core issue.
+So BB vs.\ uninformed MWPM is a decoder comparison, not a code comparison, and is a poor
+primary metric.
 
-Under the fair erasure-aware comparison, BB codes at $N=1296$ achieve $p^* = 0.471$ versus
-$p^* = 0.460$ for the surface code at $N=2592$ (which encodes only $K=2$ logical qubits).
-The threshold advantage of BB codes is thus modest ($\Delta p^* \approx 0.011$) at comparable
-physical qubit counts.
-The decisive advantage lies in qubit efficiency: the BB $[[1296,12]]$ code requires
-$N/K = 108$ physical qubits per logical qubit, compared to $N/K = 1296$ for a $K=2$ surface
-code at $N=2592$---a \textbf{12$\times$ reduction in normalized overhead within this
-comparison setting}.
-We note that this comparison is not fully architecture-neutral: surface codes are constrained
-to $K=2$ by their local planar geometry, whereas BB codes are non-local and can in principle
-encode more logical qubits per physical qubit.
-The relevant practical claim is that \emph{given the same physical qubit budget, BB codes
-protect more logical qubits at equal or higher threshold}---a meaningful advantage even
-acknowledging the architectural difference.
+On the fair (erasure-aware) comparison, BB at $N=1296$ reaches $p^* = 0.471$ vs.\
+$p^* = 0.460$ for the surface code at $N=2592$ ($K=2$).
+The threshold gap is modest, $\Delta p^* \approx 0.011$.
+The big difference is qubit efficiency: the BB $[[1296,12]]$ code uses $N/K = 108$ physical
+qubits per logical qubit, vs.\ $N/K = 1296$ for the $K=2$ surface code at $N=2592$---a
+\textbf{12$\times$ reduction in normalized overhead} in this setting.
+Surface codes are locked to $K=2$ by locality; BB is non-local and can encode more.
+The takeaway: \emph{for a given physical qubit budget, BB protects more logical qubits at
+the same or higher threshold}, which is the practical advantage even after the architectural
+caveat.
 
 \begin{figure}[h]
 \centering
@@ -383,17 +340,12 @@ erasure-aware surface codes cross at $p^* = 0.41$--$0.46$.}
 
 \subsection{Scaling Behavior and Overhead}
 
-Figure~\ref{fig:pstar_scaling} shows $p^*$ vs.\ $N$ for BB codes with the FSS extrapolated
-asymptote.
-For the five BB code sizes studied, $N/K$ ranges from 12 (the 12$\times$6 Gross code,
-$K/N=0.083$) to 113 (30$\times$15 code, $K/N=0.009$), reflecting the rate--overhead trade-off.
-
-Figure~\ref{fig:overhead_threshold} directly compares BB codes and erasure-aware surface codes
-on both axes simultaneously: threshold $p^*$ and overhead $N/K$.
-The BB $[[1296,12]]$ code achieves $p^* = 0.471$ at $N/K = 108$, while the erasure-aware
-surface code at comparable threshold ($p^* \approx 0.460$) requires $N/K = 1296$ (12$\times$
-worse in normalized overhead within this setting).
-This joint superiority on both axes constitutes the central practical case for BB codes.
+$p^*$ vs.\ $N$ with the FSS asymptote is in Fig.~\ref{fig:pstar_scaling}; $N/K$ runs from
+12 (Gross code) to 113 across the five sizes.
+Fig.~\ref{fig:overhead_threshold} plots threshold and overhead together: the BB
+$[[1296,12]]$ code hits $p^* = 0.471$ at $N/K = 108$, while the erasure-aware surface code
+near that threshold needs $N/K = 1296$---12$\times$ worse in this comparison.
+That joint advantage is the main practical argument for BB codes here.
 
 \begin{figure}[ht]
 \centering
@@ -420,39 +372,28 @@ setting.}
 
 \subsection{Reproducibility}
 
-All results are fully reproducible at a level uncommon in QLDPC simulation studies.
-Each run records the base seed (12345), per-point worker seeds, package versions
-(\texttt{numpy}, \texttt{scipy}, \texttt{bposd}, \texttt{pymatching}), and platform
-information in JSON metadata files alongside CSV data, enabling exact replication of every
-reported result.
-This includes the bootstrap confidence intervals: the resampling procedure is seeded
-deterministically from the base seed, so CI widths are themselves reproducible.
-We view this reproducibility infrastructure as an independent contribution: many published
-QLDPC simulation studies do not report seeds or package versions, making replication
-difficult even when methodology is described in detail.
+Every run is reproducible from recorded data: base seed (12345), per-point worker seeds,
+package versions (\texttt{numpy}, \texttt{scipy}, \texttt{bposd}, \texttt{pymatching}), and
+platform info in JSON next to the CSV.
+Bootstrap CIs use a deterministic seed, so the intervals themselves reproduce.
+Few QLDPC simulation papers report seeds or versions; we treat this as part of the
+contribution, since reproducing published numbers is otherwise often impossible.
 
 \section{Discussion}
 
 \subsection{Threshold vs.\ Overhead as the Right Metric}
 
-Our FSS analysis establishes $p^*_\infty = 0.488$ as the asymptotic erasure threshold for this
-BB code family under BP-OSD decoding.
-This is close to the known optimal erasure threshold of 0.5 for the toric code under
-maximum-likelihood decoding \cite{dennis2002topological}.
-Note that for a finite-rate code with $K/N \approx 0.009$--$0.083$, the Shannon capacity
-limit is $1 - K/N \approx 0.917$--$0.991$, so BB codes at these rates are not approaching the
-finite-rate information-theoretic limit.
-The relevant comparison is the zero-rate hashing bound $p = 0.5$: our asymptotic threshold
-$p^*_\infty = 0.488$ corresponds to \textbf{97.6\% of the zero-rate limit} under BP-OSD
-decoding---indicating that BP-OSD is a near-optimal practical decoder for this code family
-on the erasure channel, without requiring maximum-likelihood decoding.
+FSS gives an asymptotic erasure threshold $p^*_\infty = 0.488$ for this BB family under
+BP-OSD.
+The toric code under maximum-likelihood decoding reaches 0.5 \cite{dennis2002topological};
+at finite rate $K/N \approx 0.009$--$0.083$ the Shannon limit $1 - K/N$ is much higher, so
+the right benchmark is the zero-rate bound $p = 0.5$.
+We get \textbf{97.6\% of that} with BP-OSD and no ML decoding---so BP-OSD is effectively
+near-optimal for this code on the erasure channel.
 
-Figure~\ref{fig:frac_capacity} quantifies how close each finite code comes to its individual
-Shannon limit: the ratio $p^*/(1 - K/N)$ rises from 0.40 at $N=144$ to 0.48 at $N=1296$,
-converging towards the asymptotic value $p^*_\infty/1 = 0.488$ (i.e., 97.6\% of the
-zero-rate limit $p = 0.5$).
-This shows that BP-OSD is a nearly capacity-approaching decoder for large BB codes on the
-erasure channel.
+Fig.~\ref{fig:frac_capacity} plots $p^*/(1 - K/N)$ vs.\ $N$: it rises from 0.40 at $N=144$
+to 0.48 at $N=1296$, trending to 0.488 (97.6\% of the zero-rate limit).
+BP-OSD is thus nearly capacity-approaching for large BB codes here.
 
 \begin{figure}[ht]
 \centering
@@ -465,44 +406,36 @@ Error bars show 95\% bootstrap CIs propagated through the ratio.}
 \label{fig:frac_capacity}
 \end{figure}
 
-The threshold advantage of BB codes over erasure-aware surface codes is real but modest
-($\Delta p^* \approx 0.01$--$0.03$ depending on size).
-The compelling case for BB codes is the overhead: for any fixed number of logical qubits $K$,
-BB codes require $\sim$$12\times$ fewer physical qubits than surface codes at comparable
-pseudo-threshold within this comparison setting, as shown in Fig.~\ref{fig:overhead_threshold}.
-As $N$ grows, constant-rate QLDPC codes scale $K \propto N$ while fixed-$K$ surface codes do
-not, so the overhead gap widens further in the asymptotic regime.
+The threshold edge for BB over erasure-aware surface is real but small
+($\Delta p^* \approx 0.01$--$0.03$).
+The compelling part is overhead: at comparable $p^*$, BB needs $\sim$12$\times$ fewer
+physical qubits per logical qubit (Fig.~\ref{fig:overhead_threshold}).
+For constant-rate QLDPC, $K \propto N$ as $N$ grows; for fixed-$K$ surface codes it does
+not, so the gap grows in the asymptotic regime.
 
 \subsection{Rate--Threshold Trade-off}
 
-The $[[144,12,12]]$ Gross code achieves the best encoding rate ($K/N = 0.083$) with a
-pseudo-threshold of $p^* = 0.370$, making it attractive when qubit density is the priority.
-Larger codes reach higher thresholds (up to $0.471$) at the cost of lower rates (down to
-$0.009$).
-This trade-off is intrinsic to the code family and should guide hardware-specific code selection.
+The Gross code $[[144,12,12]]$ has the best rate ($K/N = 0.083$) and $p^* = 0.370$---good
+when qubit count matters more than threshold.
+Larger codes push $p^*$ up to 0.471 but drop the rate to 0.009.
+That trade-off is built into the family and matters for choosing a code on real hardware.
 
 \subsection{Critical Exponent and Universality}\label{sec:critical_exponent}
 
-The FSS critical exponent $\nu \approx 1.18$ is consistent with a second-order phase transition.
-For reference, $\nu = 4/3 \approx 1.33$ characterizes the random-bond Ising model (RBIM)
-universality class, which underlies the surface code threshold via an exact statistical
-mechanics mapping \cite{dennis2002topological, wang2003quantum}.
-We caution, however, that this mapping does not straightforwardly extend to BB codes under
-BP-OSD decoding: the RBIM connection assumes maximum-likelihood decoding and a local
-Hamiltonian structure, neither of which applies here.
-Consequently, the comparison $\nu \approx 1.18$ vs.\ $4/3$ is suggestive rather than definitive.
+We get $\nu \approx 1.18$, consistent with a second-order transition.
+The surface code maps to the random-bond Ising model (RBIM), which has $\nu = 4/3$
+\cite{dennis2002topological, wang2003quantum}---but that mapping assumes ML decoding and a
+local Hamiltonian, neither of which holds for BB codes under BP-OSD.
+So comparing our $\nu$ to $4/3$ is suggestive, not definitive.
 
-The observed deviation from $\nu = 4/3$ may reflect finite-size effects at the system
-sizes studied ($N \leq 1296$), corrections-to-scaling that our leading-order polynomial
-ansatz cannot capture, or a distinct effective universality class under BP-OSD decoding.
-Decoder-dependent universality---where the effective critical behavior depends on the decoding
-algorithm rather than the code alone---is a plausible and physically meaningful possibility
-for non-local codes decoded by iterative algorithms.
-Distinguishing these scenarios requires substantially larger system sizes and controlled
-corrections-to-scaling analysis, which is beyond the scope of this study.
-We flag this as an important open question, but emphasize that our primary results
-($p^*_\infty$, overhead comparison, fairness correction) do not depend on the universality
-class interpretation.
+The gap could be finite-size or corrections-to-scaling that our polynomial ansatz misses, or
+BB under BP-OSD could sit in a different effective universality class.
+Decoder-dependent universality (critical behavior set by the decoder as much as the code) is
+plausible for non-local codes with iterative decoding.
+Sorting this out would need larger $N$ and a tighter handle on corrections; we leave it
+open.
+The main results---$p^*_\infty$, overhead, and the fairness correction---do not hinge on
+which interpretation is right.
 
 \subsection{Limitations}\label{sec:limitations}
 
@@ -541,39 +474,27 @@ class interpretation.
 
 \section{Conclusion}
 
-We have presented a simulation study of bivariate bicycle codes on the quantum erasure channel,
-with a focus on two methodological issues---decoder-baseline fairness and pseudo-threshold
-vs.\ asymptotic threshold conflation---that affect code comparisons across the QLDPC
-literature.
-Key findings:
-\begin{itemize}
-    \item Under standard depolarizing-weight MWPM without erasure information, surface code
-          baselines empirically match random guessing on the erasure channel within our tested
-          regime; fair comparisons require erasure-aware MWPM. This distinction corrects a
-          systematic error present in several prior comparisons.
-    \item Under the fair baseline, finite-size pseudo-thresholds for BB codes scale from
-          $p^* = 0.370$ to $0.471$ across $N = 144$--$1296$, with 95\% bootstrap CIs
-          $\lesssim 0.001$.
-    \item FSS analysis extrapolates an asymptotic threshold $p^*_\infty \approx 0.488$
-          (statistical CI $\pm 0.001$; estimated systematic uncertainty $\lesssim 0.005$,
-          confirmed by fit-window sensitivity) with $\nu \approx 1.18$, clearly
-          distinguishing it from finite-size crossings.
-    \item BB codes show a modest threshold advantage ($\Delta p^* \approx 0.01$) alongside
-          a 12$\times$ reduction in normalized overhead relative to surface codes, within
-          this comparison setting.
-\end{itemize}
+We simulated bivariate bicycle codes on the quantum erasure channel and tackled two
+methodological issues that distort many QLDPC comparisons: decoder-baseline fairness and
+the confusion of pseudo-thresholds with asymptotic thresholds.
+Without erasure information, standard MWPM on the surface code matches random guessing in
+our regime---so fair code comparisons need erasure-aware MWPM, and the old baseline
+systematically misleads.
+On that fair baseline, BB pseudo-thresholds run from $p^* = 0.370$ to $0.471$ for
+$N = 144$--$1296$ (95\% bootstrap CIs $\lesssim 0.001$), and FSS extrapolates
+$p^*_\infty \approx 0.488$ ($\pm 0.001$ stat, $\lesssim 0.005$ sys) with $\nu \approx 1.18$.
+BB has a small threshold edge and a 12$\times$ lower normalized overhead than surface
+codes in this setting.
 
-These results establish BB codes as practically competitive on the erasure channel not
-primarily through threshold superiority, but through substantially better qubit efficiency
-within the code-capacity setting studied here.
-The reproducibility infrastructure---full seed tracking, version pinning, and per-simulation
-metadata---is itself a contribution: it provides a replicable baseline for future studies
-comparing decoders or code families on the erasure channel.
+The practical message: BB codes compete on the erasure channel mainly through qubit
+efficiency, not raw threshold.
+We also provide a reproducible pipeline (seeds, versions, metadata) so that future work on
+decoders or code families can build on numbers that actually replicate.
 
 \section*{Acknowledgments}
 
-We thank the quantum LDPC community for groundbreaking code constructions and the developers of
-the \texttt{bposd}, \texttt{ldpc}, and \texttt{pymatching} packages for their excellent software.
+We thank the QLDPC community for the code constructions that made this work possible, and the
+developers of \texttt{bposd}, \texttt{ldpc}, and \texttt{pymatching} for the tools we used.
 
 \begin{thebibliography}{99}
 
