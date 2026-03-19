@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import glob as _glob
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -203,7 +204,8 @@ def main() -> int:
     # Pick CSV(s)
     csv_paths: List[Path]
     if args.csv:
-        csv_paths = [Path(args.csv)]
+        expanded = _glob.glob(args.csv)
+        csv_paths = [Path(p) for p in sorted(expanded)] if expanded else [Path(args.csv)]
     elif args.all:
         csv_paths = sorted(list(out_dir.glob("scaling_*.csv")) + list(out_dir.glob("baseline_surface_*.csv")), key=lambda p: p.stat().st_mtime)
         if not csv_paths:
@@ -232,38 +234,53 @@ def main() -> int:
         M = to_int(r["M"])
         size_info[(L, M)] = {"N": to_int(r.get("N", "")), "K": r.get("K", ""), "family": r.get("family", "bivariate_bicycle")}
 
+    # Family style mapping
+    _FAM_STYLE = {
+        "bivariate_bicycle":                   dict(linestyle="-",  marker="o", linewidth=1.5, markersize=3),
+        "toric_surface_mwpm_erasure_aware":    dict(linestyle="--", marker="s", linewidth=1.2, markersize=3),
+        "toric_surface_mwpm_uninformed":       dict(linestyle=":",  marker="^", linewidth=1.2, markersize=3),
+    }
+    _FAM_LABEL = {
+        "bivariate_bicycle":                   "BB",
+        "toric_surface_mwpm_erasure_aware":    "Surface (erasure-aware MWPM)",
+        "toric_surface_mwpm_uninformed":       "Surface (uninformed MWPM)",
+    }
+
+    def _fam_style(fam: str) -> dict:
+        for k, v in _FAM_STYLE.items():
+            if k in fam:
+                return v
+        return dict(linestyle="-", marker="o", linewidth=1.5, markersize=3)
+
+    def _fam_label_prefix(fam: str) -> str:
+        for k, v in _FAM_LABEL.items():
+            if k in fam:
+                return v
+        return fam
+
     # ---- Plot 1: WER vs p curves ----
     plt.figure(figsize=(figw, figh))
+    _legend_fam_seen: set = set()
     for (L, M), pts in sorted(by_size.items(), key=lambda kv: size_info[kv[0]].get("N", 0)):
         xs = [p for p, _, _, _ in pts]
         ys = [w for _, w, _, _ in pts]
-        
+
         info = size_info[(L, M)]
         N = info.get("N", "")
-        fam = info.get("family", "")
-        label = f"{fam}: {L}x{M} (N={N})" if fam else f"{L}x{M} (N={N})"
-        
+        fam = info.get("family", "bivariate_bicycle")
+        prefix = _fam_label_prefix(fam)
+        label = f"{prefix} {L}\u00d7{M} (N={N})"
+        style = _fam_style(fam)
+
         if args.no_error_bars:
-            # Simple line plot without error bars
-            plt.plot(xs, ys, '-o', linewidth=1.5, markersize=3, label=label)
+            plt.plot(xs, ys, label=label, **style)
         else:
-            # 95% CI half-widths for error bars
-            yerr_lo = []
-            yerr_hi = []
+            yerr_lo, yerr_hi = [], []
             for _, w, fails, shots in pts:
                 lo, hi = wilson_ci_95(int(fails), int(shots))
                 yerr_lo.append(max(0.0, w - lo))
                 yerr_hi.append(max(0.0, hi - w))
-            plt.errorbar(
-                xs,
-                ys,
-                yerr=[yerr_lo, yerr_hi],
-                fmt="-o",
-                linewidth=1.5,
-                markersize=3,
-                capsize=2,
-                label=label,
-            )
+            plt.errorbar(xs, ys, yerr=[yerr_lo, yerr_hi], capsize=2, label=label, **style)
 
     title = args.title.strip()
     if not title:
@@ -296,22 +313,24 @@ def main() -> int:
             estimates = _load_threshold_estimates_from_jsons([mj])
 
     if estimates:
+        # Only plot BB code pseudo-thresholds on the p* vs N figure
+        bb_estimates = [e for e in estimates
+                        if "bivariate_bicycle" in (e.get("family", "") or "bivariate_bicycle")]
+
         # Group by target_wer (usually just one)
         by_target = defaultdict(list)
-        for e in estimates:
+        for e in bb_estimates:
             if e.get("p_at_target_wer") is None:
                 continue
             by_target[float(e["target_wer"])].append(e)
 
-        # Plot the first target_wer available
         target = sorted(by_target.keys())[0] if by_target else None
         if target is not None:
             pts_meta = sorted(by_target[target], key=lambda e: int(e.get("N") or 0))
             xsN = [int(e["N"]) for e in pts_meta if e.get("N") is not None]
             ysp = [float(e["p_at_target_wer"]) for e in pts_meta if e.get("p_at_target_wer") is not None]
-            labels = [f"{e['L']}x{e['M']}" for e in pts_meta]
+            labels_meta = [f"{e['L']}\u00d7{e['M']}" for e in pts_meta]
 
-            # Approx p* uncertainty from bracketing points in the combined CSV data
             yerr = []
             for e in pts_meta:
                 L = int(e["L"])
@@ -321,12 +340,32 @@ def main() -> int:
 
             if xsN:
                 plt.figure(figsize=(figw * 0.875, figh * 0.9))
-                plt.errorbar(xsN, ysp, yerr=yerr, marker="o", linewidth=1.5, capsize=3)
-                for x, y, lab in zip(xsN, ysp, labels):
+                plt.errorbar(xsN, ysp, yerr=yerr, marker="o", linewidth=1.5, capsize=3,
+                             color="steelblue", label="BB pseudo-threshold $p^*$")
+                for x, y, lab in zip(xsN, ysp, labels_meta):
                     plt.annotate(lab, (x, y), textcoords="offset points", xytext=(5, 5), fontsize=8)
-                plt.title(f"p at target WER={target} vs N")
+
+                # FSS asymptote from fss_results.json if available
+                fss_json = out_dir / "fss_prelim" / "fss_results.json"
+                if fss_json.exists():
+                    try:
+                        fss = load_json(fss_json)
+                        p_inf = fss.get("p_star_fit")
+                        p_inf_ci = fss.get("p_star_ci_95", [None, None])
+                        if p_inf is not None:
+                            x_range = [min(xsN) * 0.9, max(xsN) * 1.1]
+                            plt.axhline(p_inf, color="red", linestyle="--", linewidth=1.2,
+                                        label=f"FSS asymptote $p^*_\\infty={p_inf:.3f}$")
+                            if p_inf_ci[0] and p_inf_ci[1]:
+                                plt.fill_between(x_range, [p_inf_ci[0]]*2, [p_inf_ci[1]]*2,
+                                                 color="red", alpha=0.12, label="95% CI (bootstrap)")
+                    except Exception:
+                        pass
+
+                plt.title(f"Pseudo-threshold $p^*$ (WER={target}) vs N")
                 plt.xlabel("N (physical qubits)")
-                plt.ylabel("p@target_WER")
+                plt.ylabel("$p^*$ (WER = 0.10 crossing)")
+                plt.legend(fontsize=8)
                 plt.grid(True, alpha=0.3)
                 plt.tight_layout()
                 out2 = out_dir / f"plot_all_pstar_vs_N.{args.format}" if args.all else out_dir / f"plot_pstar_vs_N_{csv_paths[0].stem}.{args.format}"

@@ -73,15 +73,26 @@ def toric_code_matrices(L: int):
                 data.append(1)
     Hz = csr_matrix((data, (rows, cols)), shape=(m, n), dtype=np.uint8)
 
-    # Logical Z operators: one wraps x-direction (use vertical edges at x=0),
-    # another wraps y-direction (use horizontal edges at y=0).
+    # Logical Z operators: one wraps y-direction (vertical edges at x=0),
+    # another wraps x-direction (horizontal edges at y=0).
     lz = np.zeros((2, n), dtype=np.uint8)
     for y in range(L):
-        lz[0, _v_idx(L, 0, y)] = 1
+        lz[0, _v_idx(L, 0, y)] = 1   # lz[0]: v(0,y) for y=0..L-1
     for x in range(L):
-        lz[1, _h_idx(L, x, 0)] = 1
+        lz[1, _h_idx(L, x, 0)] = 1   # lz[1]: h(x,0) for x=0..L-1
 
-    return Hx, Hz, lz
+    # Logical X operators, conjugate to lz:
+    #   lx[0] anticommutes with lz[0] (shares v(0,0)) and commutes with lz[1]
+    #   lx[1] anticommutes with lz[1] (shares h(0,0)) and commutes with lz[0]
+    # Derivation: lx[0] = vertical edges at y=0: v(x,0) for x=0..L-1
+    #             lx[1] = horizontal edges at x=0: h(0,y) for y=0..L-1
+    lx = np.zeros((2, n), dtype=np.uint8)
+    for x in range(L):
+        lx[0, _v_idx(L, x, 0)] = 1   # lx[0]: v(x,0) for x=0..L-1
+    for y in range(L):
+        lx[1, _h_idx(L, 0, y)] = 1   # lx[1]: h(0,y) for y=0..L-1
+
+    return Hx, Hz, lz, lx
 
 
 class ToricCode:
@@ -136,7 +147,7 @@ class ToricCode:
         Hz : csr_matrix
             Z-type parity check matrix (plaquette checks) of shape (L*L, N)
         """
-        Hx, Hz, _ = toric_code_matrices(self.L)
+        Hx, Hz, _, _ = toric_code_matrices(self.L)
         return Hx, Hz
     
     def get_logical_z(self):
@@ -147,10 +158,24 @@ class ToricCode:
         -------
         Lz : ndarray
             Logical Z operators as a (2, N) uint8 array
-            - Lz[0]: wraps in x-direction (vertical edges at x=0)
-            - Lz[1]: wraps in y-direction (horizontal edges at y=0)
+            - Lz[0]: vertical edges at x=0 (wraps y-direction)
+            - Lz[1]: horizontal edges at y=0 (wraps x-direction)
         """
-        _, _, lz = toric_code_matrices(self.L)
+        _, _, lz, _ = toric_code_matrices(self.L)
         return lz
+
+    def get_logical_x(self):
+        """
+        Get the logical X operators for the toric code.
+
+        Returns
+        -------
+        Lx : ndarray
+            Logical X operators as a (2, N) uint8 array
+            - Lx[0]: vertical edges at y=0 (anticommutes with Lz[0])
+            - Lx[1]: horizontal edges at x=0 (anticommutes with Lz[1])
+        """
+        _, _, _, lx = toric_code_matrices(self.L)
+        return lx
 
 

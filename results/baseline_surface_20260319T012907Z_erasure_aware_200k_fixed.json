@@ -1,0 +1,36 @@
+{
+  "bracket_step": 0.04,
+  "decoder": "pymatching_per_shot_weights_adaptive",
+  "family": "toric_surface_mwpm_erasure_aware",
+  "note": "Adaptive: bracket then regula falsi (Illinois). Per-shot weights: erased=0, non-erased=N.",
+  "num_cores": 15,
+  "p_start": 0.38,
+  "package_versions": {
+    "numpy": "2.4.0",
+    "pymatching": "2.3.1"
+  },
+  "platform": {
+    "release": "11",
+    "system": "Windows"
+  },
+  "python": {
+    "version": "3.13.12"
+  },
+  "seed": 42,
+  "shots_per_point": 200000,
+  "tag": "erasure_aware_200k_fixed",
+  "target_wer": 0.1,
+  "threshold_estimates": [
+    {
+      "K": 2,
+      "L": 36,
+      "M": 36,
+      "N": 2592,
+      "n_points_evaluated": 7,
+      "p_at_target_wer": 0.4597863483333334,
+      "target_wer": 0.1
+    }
+  ],
+  "timestamp_utc": "20260319T012907Z",
+  "tol": 0.0005
+}

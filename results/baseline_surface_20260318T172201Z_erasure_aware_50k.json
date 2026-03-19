@@ -1,0 +1,72 @@
+{
+  "bracket_step": 0.04,
+  "decoder": "pymatching_per_shot_weights_adaptive",
+  "family": "toric_surface_mwpm_erasure_aware",
+  "note": "Adaptive: bracket then bisect. Per-shot weights: erased=0, non-erased=N.",
+  "num_cores": 15,
+  "p_start": 0.38,
+  "package_versions": {
+    "numpy": "2.4.0",
+    "pymatching": "2.3.1"
+  },
+  "platform": {
+    "release": "11",
+    "system": "Windows"
+  },
+  "python": {
+    "version": "3.13.12"
+  },
+  "refine_steps": 8,
+  "seed": 12345,
+  "shots_per_point": 50000,
+  "tag": "erasure_aware_50k",
+  "target_wer": 0.1,
+  "threshold_estimates": [
+    {
+      "K": 2,
+      "L": 12,
+      "M": 12,
+      "N": 288,
+      "n_points_evaluated": 10,
+      "p_at_target_wer": 0.4092950581395349,
+      "target_wer": 0.1
+    },
+    {
+      "K": 2,
+      "L": 18,
+      "M": 18,
+      "N": 648,
+      "n_points_evaluated": 11,
+      "p_at_target_wer": 0.4328671875,
+      "target_wer": 0.1
+    },
+    {
+      "K": 2,
+      "L": 24,
+      "M": 24,
+      "N": 1152,
+      "n_points_evaluated": 11,
+      "p_at_target_wer": 0.4456847426470588,
+      "target_wer": 0.1
+    },
+    {
+      "K": 2,
+      "L": 30,
+      "M": 30,
+      "N": 1800,
+      "n_points_evaluated": 11,
+      "p_at_target_wer": 0.4538936661073826,
+      "target_wer": 0.1
+    },
+    {
+      "K": 2,
+      "L": 36,
+      "M": 36,
+      "N": 2592,
+      "n_points_evaluated": 12,
+      "p_at_target_wer": 0.4600053879310345,
+      "target_wer": 0.1
+    }
+  ],
+  "timestamp_utc": "20260318T172201Z"
+}

@@ -62,7 +62,7 @@ def run_mwpm_point(L: int, p_erasure: float, shots: int, seed: int = 0) -> Dict[
     """
     rng = np.random.default_rng(seed)
 
-    Hx, Hz, lz = toric_code_matrices(L)
+    Hx, Hz, lz, _lx = toric_code_matrices(L)
     n = Hz.shape[1]
 
     # Erasure conversion: X error occurs with probability q = p/2 (marginally).
