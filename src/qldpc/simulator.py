@@ -14,6 +14,7 @@ from typing import Dict, List, Tuple, Optional, Any
 
 from .code import BivariateBicycleCode
 from .decoder import DecoderConfig, create_decoders
+from .channels import ChannelConfig, apply_channel, build_channel_probs
 
 
 def _coerce_correction(correction: Any, n: int, dtype: np.dtype) -> np.ndarray:
@@ -37,46 +38,38 @@ def worker_simulation(args: Tuple) -> int:
     Parameters
     ----------
     args : tuple
-        (seed, shots, erasure_p, hx_csr, hz_csr, config)
-        
+        (seed, shots, erasure_p, hx_csr, hz_csr, config[, channel_config])
+        channel_config is optional; defaults to pure-erasure ChannelConfig().
+
     Returns
     -------
     int
         Number of logical errors encountered
     """
-    seed, shots, erasure_p, hx_csr, hz_csr, config = args
+    if len(args) == 7:
+        seed, shots, erasure_p, hx_csr, hz_csr, config, ch_cfg = args
+    else:
+        seed, shots, erasure_p, hx_csr, hz_csr, config = args
+        ch_cfg = ChannelConfig()
     rng = np.random.default_rng(seed)
-    
+
     # 1. Setup Code & Decoders (Expensive, do once per worker)
     qcode, bpd_x, bpd_z = create_decoders(hx_csr, hz_csr, config, initial_error_rate=erasure_p)
-    
+
     logical_fails = 0
-    background_error = 1e-10  # Assumed essentially perfect if not erased
-    
+
     # 2. The Loop (Fast)
     for _ in range(shots):
         # A. Generate Erasures (Hardware Layer)
-        # Erasure mask: 1 if erased, 0 if clean
         erasure_mask = rng.random(qcode.N) < erasure_p
-        
-        # B. Apply Noise
-        # Pure erasure channel: if erased, randomized Pauli X/Z.
-        # For a maximally mixed erasure, X and Z components are independent Bernoulli(0.5).
+
+        # B. Apply channel noise (erasure + optional depolarizing)
         x_error = np.zeros(qcode.N, dtype=np.uint8)
         z_error = np.zeros(qcode.N, dtype=np.uint8)
-        
-        # Apply random bit flips ONLY on erased qubits (Maximal Entropy)
-        # In erasure conversion, 50% chance of X/Z error on erased qubit
-        rand_x = rng.integers(0, 2, size=qcode.N, dtype=np.uint8)
-        rand_z = rng.integers(0, 2, size=qcode.N, dtype=np.uint8)
-        x_error[erasure_mask] = rand_x[erasure_mask]
-        z_error[erasure_mask] = rand_z[erasure_mask]
-        
-        # C. Hardware Flagging (The "Secret Weapon")
-        # We tell the decoder which bits are erased by setting their prob to 0.5 (LLR = 0)
-        # Normal bits get a very low error probability (simulating high fidelity background)
-        channel_probs = np.full(qcode.N, background_error)
-        channel_probs[erasure_mask] = 0.5
+        apply_channel(x_error, z_error, erasure_mask, ch_cfg, rng)
+
+        # C. Build per-qubit error probabilities for the decoder
+        channel_probs = build_channel_probs(qcode.N, erasure_mask, ch_cfg)
         
         # Update decoder priors
         bpd_x.update_channel_probs(channel_probs)
@@ -131,10 +124,12 @@ def _prepared_worker_init(
     lz: np.ndarray,
     config: DecoderConfig,
     background_error: float,
+    channel_config: Optional[ChannelConfig] = None,
 ):
     """
     Initializer for multiprocessing workers.
     Stores Hz/Lz and instantiates a BP-OSD decoder once per worker.
+    channel_config defaults to pure-erasure ChannelConfig() if not supplied.
     """
     # Local import to avoid importing bposd in parent unnecessarily
     from bposd import bposd_decoder
@@ -153,6 +148,7 @@ def _prepared_worker_init(
     _PREPARED["lz"] = lz_u8
     _PREPARED["N"] = n
     _PREPARED["background_error"] = float(background_error)
+    _PREPARED["channel_config"] = channel_config if channel_config is not None else ChannelConfig()
 
     # Decoder initialized once; error_rate here is just an initial placeholder.
     # Suppress deprecation warning for legacy bposd_decoder API (still works)
@@ -183,17 +179,25 @@ def _prepared_worker_init(
 def _prepared_worker_simulation(args: Tuple) -> int:
     """
     Worker simulation using pre-initialized decoder and precomputed matrices.
-    Args: (seed, shots, erasure_p)
+
+    Args: (seed, shots, erasure_p[, channel_config])
+        channel_config (optional) — if provided, overrides the one stored during
+        pool initialization, letting callers vary δ/ε per p-value without
+        restarting the pool.
     """
-    seed, shots, erasure_p = args
+    if len(args) == 4:
+        seed, shots, erasure_p, ch_cfg = args
+    else:
+        seed, shots, erasure_p = args
+        ch_cfg = _PREPARED["channel_config"]
+
     rng = np.random.default_rng(seed)
 
-    hx = _PREPARED["hx"]
     hz = _PREPARED["hz"]
-    lx = _PREPARED["lx"]
+    hx = _PREPARED["hx"]
     lz = _PREPARED["lz"]
+    lx = _PREPARED["lx"]
     N = _PREPARED["N"]
-    background_error = _PREPARED["background_error"]
     bpd_x = _PREPARED["bpd_x"]
     bpd_z = _PREPARED["bpd_z"]
 
@@ -204,13 +208,9 @@ def _prepared_worker_simulation(args: Tuple) -> int:
 
         x_error = np.zeros(N, dtype=np.uint8)
         z_error = np.zeros(N, dtype=np.uint8)
-        rand_x = rng.integers(0, 2, size=N, dtype=np.uint8)
-        rand_z = rng.integers(0, 2, size=N, dtype=np.uint8)
-        x_error[erasure_mask] = rand_x[erasure_mask]
-        z_error[erasure_mask] = rand_z[erasure_mask]
+        apply_channel(x_error, z_error, erasure_mask, ch_cfg, rng)
 
-        channel_probs = np.full(N, background_error, dtype=float)
-        channel_probs[erasure_mask] = 0.5
+        channel_probs = build_channel_probs(N, erasure_mask, ch_cfg)
         bpd_x.update_channel_probs(channel_probs)
         bpd_z.update_channel_probs(channel_probs)
 
@@ -427,11 +427,16 @@ class QuantumSimulator:
             "worker_seeds": list(used_worker_seeds),
         }
 
-    def make_prepared_pool(self, background_error: float = 1e-10):
+    def make_prepared_pool(
+        self,
+        background_error: float = 1e-10,
+        channel_config: Optional[ChannelConfig] = None,
+    ):
         """
         Create a multiprocessing pool whose workers are initialized once with:
         - dense Hz and dense Lz (uint8)
         - a BP-OSD decoder instance
+        - a ChannelConfig (defaults to pure-erasure)
 
         Returns: (pool, info_dict)
         """
@@ -457,10 +462,11 @@ class QuantumSimulator:
         lz = np.asarray(lz_src, dtype=np.uint8)
         K = int(getattr(qcode, "K", lz.shape[0] if hasattr(lz, "shape") else 0))
 
+        ch_cfg = channel_config if channel_config is not None else ChannelConfig()
         pool = multiprocessing.Pool(
             self.num_cores,
             initializer=_prepared_worker_init,
-            initargs=(hx, hz, lx, lz, self.config, float(background_error)),
+            initargs=(hx, hz, lx, lz, self.config, float(background_error), ch_cfg),
         )
         info = {
             "N": int(hz.shape[1]),
@@ -483,9 +489,14 @@ class QuantumSimulator:
         total_shots: int,
         pool,
         seed: Optional[int] = None,
+        channel_config: Optional[ChannelConfig] = None,
     ) -> Dict[str, float]:
         """
         Run a single p using a prepared pool (persistent workers).
+
+        channel_config, if provided, overrides the ChannelConfig stored in
+        each worker's _PREPARED dict.  Pass it when sweeping δ/ε at fixed p
+        without restarting the pool.
         """
         base_seed = self.seed if seed is None else seed
         shot_counts = self._split_shots(total_shots, self.num_cores)
@@ -495,7 +506,10 @@ class QuantumSimulator:
         for i in range(self.num_cores):
             if shot_counts[i] <= 0:
                 continue
-            args.append((worker_seeds[i], shot_counts[i], float(erasure_rate)))
+            if channel_config is not None:
+                args.append((worker_seeds[i], shot_counts[i], float(erasure_rate), channel_config))
+            else:
+                args.append((worker_seeds[i], shot_counts[i], float(erasure_rate)))
             used_worker_seeds.append(worker_seeds[i])
         start_time = time.time()
         worker_results = pool.map(_prepared_worker_simulation, args)

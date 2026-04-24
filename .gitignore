@@ -143,7 +143,25 @@ Thumbs.db
 *.bak
 
 # Project-specific
-# Uncomment these if you don't want to track results
-# results/*.csv
-# results/*.json
-# results/*.png
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.out
+*.log
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# Claude session data
+.claude/
+
+# Packaging artifacts
+qldpc_arxiv.tar.gz
+
+# Experimental / scratch directories
+results/phase1_test/
+paper/poster/
+paper/figures_png/
+paper/export_figures_png.py
+paper/journal_extension_plan.md

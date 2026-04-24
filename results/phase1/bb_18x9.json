@@ -1,0 +1,102 @@
+{
+  "bisect_steps": 6,
+  "delta_eps_ratios": [
+    0.0,
+    0.1,
+    0.3,
+    0.5,
+    0.75,
+    1.0
+  ],
+  "description": "Phase 1 mixed erasure + depolarizing channel sweep",
+  "num_cores": 15,
+  "osd_order_fast": 5,
+  "osd_order_prec": 10,
+  "p_max": 0.5,
+  "p_start": 0.3,
+  "p_step_coarse": 0.03,
+  "package_versions": {
+    "bposd": "2.1",
+    "ldpc": "2.4.1",
+    "numpy": "2.4.0",
+    "scipy": "1.16.3"
+  },
+  "platform": {
+    "machine": "AMD64",
+    "release": "11",
+    "system": "Windows"
+  },
+  "python": {
+    "implementation": "CPython",
+    "version": "3.13.13"
+  },
+  "seed": 12345,
+  "shots_bracket": 30000,
+  "shots_refine": 200000,
+  "sizes": [
+    {
+      "L": 18,
+      "M": 9,
+      "N": 324
+    }
+  ],
+  "tag": "",
+  "target_wer": 0.1,
+  "threshold_estimates": [
+    {
+      "K": null,
+      "L": 18,
+      "M": 9,
+      "N": 324,
+      "delta_eps_ratio": 0.0,
+      "p_star": 0.43850004829984546,
+      "target_wer": 0.1
+    },
+    {
+      "K": null,
+      "L": 18,
+      "M": 9,
+      "N": 324,
+      "delta_eps_ratio": 0.1,
+      "p_star": null,
+      "target_wer": 0.1
+    },
+    {
+      "K": null,
+      "L": 18,
+      "M": 9,
+      "N": 324,
+      "delta_eps_ratio": 0.3,
+      "p_star": null,
+      "target_wer": 0.1
+    },
+    {
+      "K": null,
+      "L": 18,
+      "M": 9,
+      "N": 324,
+      "delta_eps_ratio": 0.5,
+      "p_star": null,
+      "target_wer": 0.1
+    },
+    {
+      "K": null,
+      "L": 18,
+      "M": 9,
+      "N": 324,
+      "delta_eps_ratio": 0.75,
+      "p_star": null,
+      "target_wer": 0.1
+    },
+    {
+      "K": null,
+      "L": 18,
+      "M": 9,
+      "N": 324,
+      "delta_eps_ratio": 1.0,
+      "p_star": null,
+      "target_wer": 0.1
+    }
+  ],
+  "timestamp_utc": "20260421T175515Z"
+}

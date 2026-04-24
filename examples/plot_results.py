@@ -71,22 +71,26 @@ def wilson_ci_95(fails: int, shots: int) -> Tuple[float, float]:
 
 def _dedupe_points_keep_max_shots(
     points: List[Dict[str, str]],
-) -> Dict[Tuple[int, int], List[Tuple[float, float, int, int]]]:
+) -> Dict[Tuple[str, int, int], List[Tuple[float, float, int, int]]]:
     """
-    For each (L,M) and p, keep the row with the largest shot count.
-    Returns: {(L,M): [(p, wer, fails, shots), ... sorted by p]}
+    For each (family, L, M) and p, keep the row with the largest shot count.
+    Returns: {(family, L, M): [(p, wer, fails, shots), ... sorted by p]}
+
+    NOTE: key includes family so that uninformed-MWPM and erasure-aware-MWPM
+    data for the same physical code size are never silently merged.
     """
-    by = defaultdict(dict)  # (L,M) -> p -> (shots, wer, fails)
+    by = defaultdict(dict)  # (family, L, M) -> p -> (shots, wer, fails)
     for r in points:
+        fam = r.get("family", "bivariate_bicycle")
         L = to_int(r["L"])
         M = to_int(r["M"])
         p = float(r["p"])
         wer = float(r["wer"])
         shots = int(float(r.get("shots", "0") or 0))
         fails = int(float(r.get("fails", "0") or 0))
-        cur = by[(L, M)].get(p)
+        cur = by[(fam, L, M)].get(p)
         if cur is None or shots > cur[0]:
-            by[(L, M)][p] = (shots, wer, fails)
+            by[(fam, L, M)][p] = (shots, wer, fails)
     out = {}
     for key, mp in by.items():
         pts = sorted(((p, wer, fails, shots) for p, (shots, wer, fails) in mp.items()), key=lambda t: t[0])
@@ -224,15 +228,16 @@ def main() -> int:
     if not all_rows:
         raise SystemExit("No rows found in selected CSV file(s).")
 
-    # Dedupe points per (L,M,p) using max shots (best statistics)
+    # Dedupe points per (family,L,M,p) using max shots (best statistics)
     by_size = _dedupe_points_keep_max_shots(all_rows)
 
-    # Best-effort size info from rows (latest seen for each size)
-    size_info: Dict[Tuple[int, int], Dict[str, Any]] = {}
+    # Best-effort size info from rows (latest seen for each (family,L,M))
+    size_info: Dict[Tuple[str, int, int], Dict[str, Any]] = {}
     for r in all_rows:
+        fam = r.get("family", "bivariate_bicycle")
         L = to_int(r["L"])
         M = to_int(r["M"])
-        size_info[(L, M)] = {"N": to_int(r.get("N", "")), "K": r.get("K", ""), "family": r.get("family", "bivariate_bicycle")}
+        size_info[(fam, L, M)] = {"N": to_int(r.get("N", "")), "K": r.get("K", ""), "family": fam}
 
     # Family style mapping
     _FAM_STYLE = {
@@ -260,14 +265,12 @@ def main() -> int:
 
     # ---- Plot 1: WER vs p curves ----
     plt.figure(figsize=(figw, figh))
-    _legend_fam_seen: set = set()
-    for (L, M), pts in sorted(by_size.items(), key=lambda kv: size_info[kv[0]].get("N", 0)):
+    for (fam, L, M), pts in sorted(by_size.items(), key=lambda kv: (size_info[kv[0]].get("N", 0), kv[0][0])):
         xs = [p for p, _, _, _ in pts]
         ys = [w for _, w, _, _ in pts]
 
-        info = size_info[(L, M)]
+        info = size_info[(fam, L, M)]
         N = info.get("N", "")
-        fam = info.get("family", "bivariate_bicycle")
         prefix = _fam_label_prefix(fam)
         label = f"{prefix} {L}\u00d7{M} (N={N})"
         style = _fam_style(fam)
@@ -335,7 +338,7 @@ def main() -> int:
             for e in pts_meta:
                 L = int(e["L"])
                 M = int(e["M"])
-                pstar, perr = estimate_pstar_and_err_from_points(by_size.get((L, M), []), target)
+                pstar, perr = estimate_pstar_and_err_from_points(by_size.get(("bivariate_bicycle", L, M), []), target)
                 yerr.append(0.0 if perr is None else float(perr))
 
             if xsN:
@@ -381,11 +384,14 @@ def main() -> int:
     # ---- Plot 3: Overhead (data qubits per logical) vs N, with surface-code baseline ----
     # For rotated surface code memory patch: k=1 and data qubits N_sc = d^2. If we compare at the
     # same data-qubit count N, surface has overhead N per logical, while BB has N/K per logical.
-    sizes_sorted = sorted(size_info.items(), key=lambda kv: kv[1].get("N", 0))
+    sizes_sorted = sorted(
+        [(key, info) for key, info in size_info.items() if "bivariate_bicycle" in info.get("family", "")],
+        key=lambda kv: kv[1].get("N", 0),
+    )
     xsN = []
     y_bb = []
     labs = []
-    for (L, M), info in sizes_sorted:
+    for (fam, L, M), info in sizes_sorted:
         N = info.get("N", 0)
         K = info.get("K", "")
         if not N:

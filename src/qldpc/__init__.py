@@ -11,6 +11,7 @@ from .code import BivariateBicycleCode
 from .simulator import QuantumSimulator
 from .decoder import DecoderConfig
 from .toric_code import ToricCode
+from .channels import ChannelConfig
 
-__all__ = ["BivariateBicycleCode", "QuantumSimulator", "DecoderConfig", "ToricCode"]
+__all__ = ["BivariateBicycleCode", "QuantumSimulator", "DecoderConfig", "ToricCode", "ChannelConfig"]
 

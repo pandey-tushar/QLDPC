@@ -28,7 +28,7 @@ Fair threshold estimation for bivariate bicycle (BB) codes on the quantum erasur
 runs into two recurring problems: decoder-baseline unfairness and the conflation of
 finite-size pseudo-thresholds with true asymptotic thresholds.
 We run both uninformed and \emph{erasure-aware} minimum-weight perfect matching (MWPM)
-surface code baselines alongside BP-OSD decoding of BB codes.
+toric code baselines alongside BP-OSD decoding of BB codes.
 With standard depolarizing-weight MWPM and no erasure information, performance matches
 random guessing on the erasure channel in our tested regime---so prior work that compares
 against this baseline is really comparing decoders, not codes.
@@ -37,7 +37,7 @@ sizes from $N=144$ to $N=1296$.
 Pseudo-thresholds (WER = 0.10) run from $p^* = 0.370$ to $0.471$; finite-size scaling
 (FSS) gives an asymptotic threshold $p^*_\infty \approx 0.488$, within 2.4\% of the
 zero-rate limit and without maximum-likelihood decoding.
-On the fair baseline, BB at $N=1296$ has a modest edge in threshold over the surface code
+On the fair baseline, BB at $N=1296$ has a modest edge in threshold over the toric code
 at twice the qubit count, and a 12$\times$ lower normalized overhead---the latter is
 where the practical advantage sits.
 All runs are reproducible from recorded seeds and package versions.
@@ -58,7 +58,7 @@ The erasure channel is a natural benchmark for quantum codes because error \emph
 known (e.g., via measurement flagging \cite{grassl2004codes}), allowing erasure-informed decoders
 to achieve near-optimal performance.
 Unfair decoder choices can inflate apparent code advantages, so we run both an uninformed
-and an erasure-aware MWPM surface baseline alongside BP-OSD decoding of BB codes.
+and an erasure-aware MWPM toric code baseline alongside BP-OSD decoding of BB codes.
 We also separate \emph{finite-size pseudo-thresholds} (WER-crossing at a fixed target WER)
 from true asymptotic thresholds via finite-size scaling (FSS); our extrapolated
 $p^*_\infty \approx 0.488$ sits within 2.4\% of the zero-rate limit under BP-OSD, without
@@ -68,13 +68,13 @@ In short: we give a reproducible Monte Carlo setup (200k shots per point, bootst
 CIs $\lesssim 0.001$ on $p^*$, with seeds and versions recorded) and a full FSS treatment
 for this BB family ($p^*_\infty \approx 0.488$, $\nu \approx 1.18$, plus fit-window and
 corrections-to-scaling checks).
-We also provide a fair comparison to erasure-aware MWPM surface codes---a 12$\times$
+We also provide a fair comparison to erasure-aware MWPM toric codes---a 12$\times$
 overhead reduction for BB at comparable threshold---and show that uninformed MWPM on the
 erasure channel matches random guessing in our regime, so that baseline should not be
 used to compare codes.
-Comparisons between BB and surface codes are not architecture-neutral: BB is non-local,
-surface codes are local, and we interpret our overhead and threshold numbers as
-\emph{code efficiency} in a code-capacity setting, not as hardware blueprints.
+Comparisons between BB and toric codes are not architecture-neutral: BB is non-local,
+toric codes use periodic boundary conditions, and we interpret our overhead and threshold
+numbers as \emph{code efficiency} in a code-capacity setting, not as hardware blueprints.
 
 Recent work on BB codes under erasure or erasure-biased noise includes
 Pecorari and Pupillo \cite{pecorari2025qldpc}, Bhave et al.\ \cite{bhave2026bibi}, and
@@ -165,13 +165,13 @@ is reported alongside the primary fit.
 
 \subsection{Baseline Comparison}
 
-We compare BB codes against two surface code (toric code) baselines, both decoded with MWPM
+We compare BB codes against two toric code baselines, both decoded with MWPM
 via PyMatching \cite{pymatching}:
 
 \paragraph{Uninformed MWPM.}
 The erasure rate $p$ is converted to an effective depolarizing rate $q = p/2$ and MWPM runs
 with constant edge weights.
-This is the most conservative baseline and provides a lower bound on surface code performance.
+This is the most conservative baseline and provides a lower bound on toric code performance.
 
 \paragraph{Erasure-aware MWPM.}
 Erased qubits are assigned weight 0 and non-erased qubits are assigned a large weight $n$,
@@ -260,45 +260,45 @@ independent consistency check.}
 
 \subsection{Rate--Threshold Trade-off}
 
-Encoding rate vs $p^*$ for all BB sizes and erasure-aware surface codes appears in
+Encoding rate vs $p^*$ for all BB sizes and erasure-aware toric codes appears in
 Fig.~\ref{fig:rate_threshold}; the dashed line is the Shannon limit $K/N = 1 - p$.
-Larger BB codes trade rate for threshold along a clear Pareto frontier; surface codes
-($K/N \approx 0.003$--$0.007$) sit below on threshold at comparable rates.
+Larger BB codes trade rate for threshold along a clear Pareto frontier; toric codes
+($K/N \approx 0.001$) sit below on threshold at comparable rates.
 
 \begin{figure}[ht]
 \centering
 \includegraphics[width=\columnwidth]{plot_rate_vs_threshold.pdf}
 \caption{Encoding rate $K/N$ vs pseudo-threshold $p^*$ for BB codes (circles) and
-erasure-aware MWPM surface codes (squares).
+erasure-aware MWPM toric codes (squares).
 The dashed line shows the Shannon limit $K/N = 1-p$; points above are impossible.
 BB codes trace a Pareto frontier with higher rates at lower $p^*$ or lower rates at higher $p^*$.}
 \label{fig:rate_threshold}
 \end{figure}
 
-\subsection{WER Curves and Comparison to Surface Codes}
+\subsection{WER Curves and Comparison to Toric Codes}
 
-WER vs.\ erasure rate for BB and both surface baselines is in Fig.~\ref{fig:wer_curves};
+WER vs.\ erasure rate for BB and both toric code baselines is in Fig.~\ref{fig:wer_curves};
 Table~\ref{tab:baseline} compares pseudo-thresholds at matched sizes.
 
 \begin{table}[h]
 \centering
 \caption{Pseudo-threshold comparison between the largest BB code and erasure-aware MWPM toric
 codes at three sizes.
-At $N=2592$, the toric code encodes $K=2$ logical qubits---fixed by its local planar
-geometry---with pseudo-threshold $p^*=0.460$, while the BB $[[1296,12]]$ code achieves
+At $N=2592$, the toric code encodes $K=2$ logical qubits---fixed by its periodic (toroidal)
+boundary conditions---with pseudo-threshold $p^*=0.460$, while the BB $[[1296,12]]$ code achieves
 $p^*=0.471$ with $K=12$ at half the physical qubit count.
-Note that surface codes are constrained to $K=2$ by their locality, whereas BB codes are
-non-local; the overhead comparison reflects both this architectural difference and code efficiency.}
+The toric code has $K=2$ by topology; the planar surface code has $K=1$.
+The overhead comparison reflects this code-efficiency difference in the code-capacity setting.}
 \label{tab:baseline}
 \begin{tabular}{lccc}
 \toprule
 Code family & $N$ & $K$ & $p^*$ \\
 \midrule
 BB $36{\times}18$ & 1296 & 12 & 0.471 \\
-Surface (erasure-aware MWPM) & 2592 & 2 & 0.460 \\
-Surface (erasure-aware MWPM) & 1800 & 2 & 0.454 \\
-Surface (erasure-aware MWPM) & 1152 & 2 & 0.446 \\
-Surface (uninformed MWPM) & --- & --- & ${\lesssim}0.30$ \\
+Toric (erasure-aware MWPM) & 2592 & 2 & 0.460 \\
+Toric (erasure-aware MWPM) & 1800 & 2 & 0.454 \\
+Toric (erasure-aware MWPM) & 1152 & 2 & 0.446 \\
+Toric (uninformed MWPM)   & --- & --- & ${\lesssim}0.30$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -315,12 +315,13 @@ So BB vs.\ uninformed MWPM is a decoder comparison, not a code comparison, and i
 primary metric.
 
 On the fair (erasure-aware) comparison, BB at $N=1296$ reaches $p^* = 0.471$ vs.\
-$p^* = 0.460$ for the surface code at $N=2592$ ($K=2$).
+$p^* = 0.460$ for the toric code at $N=2592$ ($K=2$).
 The threshold gap is modest, $\Delta p^* \approx 0.011$.
 The big difference is qubit efficiency: the BB $[[1296,12]]$ code uses $N/K = 108$ physical
-qubits per logical qubit, vs.\ $N/K = 1296$ for the $K=2$ surface code at $N=2592$---a
+qubits per logical qubit, vs.\ $N/K = 1296$ for the toric code at $N=2592$ ($K=2$)---a
 \textbf{12$\times$ reduction in normalized overhead} in this setting.
-Surface codes are locked to $K=2$ by locality; BB is non-local and can encode more.
+The toric code is limited to $K=2$ by its toroidal topology; the planar surface code has $K=1$.
+BB codes are non-local and encode many more logical qubits per physical qubit.
 The takeaway: \emph{for a given physical qubit budget, BB protects more logical qubits at
 the same or higher threshold}, which is the practical advantage even after the architectural
 caveat.
@@ -329,12 +330,12 @@ caveat.
 \centering
 \includegraphics[width=\columnwidth]{plot_all_wer_vs_p.pdf}
 \caption{WER vs.\ erasure rate for bivariate bicycle codes (solid lines, $N=144$--$1296$)
-and surface code baselines.
-Dashed lines: erasure-aware MWPM surface codes ($N=288$--$2592$, $K=2$).
-Dotted lines: uninformed MWPM surface codes ($N=288$--$1152$, $K=2$, three sizes).
+and toric code baselines.
+Dashed lines: erasure-aware MWPM toric codes ($N=288$--$2592$, $K=2$).
+Dotted lines: uninformed MWPM toric codes ($N=288$--$1152$, $K=2$, three sizes).
 Error bars show 95\% Wilson confidence intervals.
 All BB code curves cross WER = 0.10 at $p^* = 0.37$--$0.47$;
-erasure-aware surface codes cross at $p^* = 0.41$--$0.46$.}
+erasure-aware toric codes cross at $p^* = 0.41$--$0.46$.}
 \label{fig:wer_curves}
 \end{figure}
 
@@ -343,7 +344,7 @@ erasure-aware surface codes cross at $p^* = 0.41$--$0.46$.}
 $p^*$ vs.\ $N$ with the FSS asymptote is in Fig.~\ref{fig:pstar_scaling}; $N/K$ runs from
 12 (Gross code) to 113 across the five sizes.
 Fig.~\ref{fig:overhead_threshold} plots threshold and overhead together: the BB
-$[[1296,12]]$ code hits $p^* = 0.471$ at $N/K = 108$, while the erasure-aware surface code
+$[[1296,12]]$ code hits $p^* = 0.471$ at $N/K = 108$, while the erasure-aware toric code
 near that threshold needs $N/K = 1296$---12$\times$ worse in this comparison.
 That joint advantage is the main practical argument for BB codes here.
 
@@ -361,9 +362,9 @@ $p^*_\infty = 0.488 \pm 0.001$.}
 \centering
 \includegraphics[width=\columnwidth]{plot_overhead_threshold.pdf}
 \caption{Overhead ($N/K$, log scale) vs.\ pseudo-threshold $p^*$ for BB codes (circles)
-and erasure-aware MWPM surface codes (squares, $K=2$).
+and erasure-aware MWPM toric codes (squares, $K=2$).
 A code is better if it appears lower (less overhead) and further right (higher threshold).
-BB codes at large $N$ outperform the fixed-$K=2$ surface codes on both axes at these representative sizes.
+BB codes at large $N$ outperform the toric code on both axes at these representative sizes.
 The annotated arrow highlights the 12$\times$ reduction in normalized overhead between
 the $[[1296,12]]$ BB code and the $K=2$ toric code at comparable $p^*$, within this comparison
 setting.}
@@ -406,11 +407,11 @@ Error bars show 95\% bootstrap CIs propagated through the ratio.}
 \label{fig:frac_capacity}
 \end{figure}
 
-The threshold edge for BB over erasure-aware surface is real but small
+The threshold edge for BB over the erasure-aware toric code is real but small
 ($\Delta p^* \approx 0.01$--$0.03$).
 The compelling part is overhead: at comparable $p^*$, BB needs $\sim$12$\times$ fewer
 physical qubits per logical qubit (Fig.~\ref{fig:overhead_threshold}).
-For constant-rate QLDPC, $K \propto N$ as $N$ grows; for fixed-$K$ surface codes it does
+For constant-rate QLDPC, $K \propto N$ as $N$ grows; for fixed-$K$ toric codes it does
 not, so the gap grows in the asymptotic regime.
 
 \subsection{Rate--Threshold Trade-off}
@@ -423,7 +424,7 @@ That trade-off is built into the family and matters for choosing a code on real 
 \subsection{Critical Exponent and Universality}\label{sec:critical_exponent}
 
 We get $\nu \approx 1.18$, consistent with a second-order transition.
-The surface code maps to the random-bond Ising model (RBIM), which has $\nu = 4/3$
+The toric code maps to the random-bond Ising model (RBIM), which has $\nu = 4/3$
 \cite{dennis2002topological, wang2003quantum}---but that mapping assumes ML decoding and a
 local Hamiltonian, neither of which holds for BB codes under BP-OSD.
 So comparing our $\nu$ to $4/3$ is suggestive, not definitive.
@@ -459,15 +460,16 @@ which interpretation is right.
           Extending to additional families---as partially explored in Rabeti and Mahdavifar
           \cite{rabeti2025bicycle}---would substantially strengthen generality claims
           and is an important direction for future work.
-    \item \textbf{Surface code shot count}: Erasure-aware surface code baseline used 50{,}000
+    \item \textbf{Toric code shot count}: The erasure-aware toric code baseline used 50{,}000
           shots per point (versus 200{,}000 for BB codes), giving wider bootstrap CIs on $p^*$.
           The $L=36$ result was confirmed with 200{,}000 shots.
-          The larger uncertainty on the surface code side does not affect qualitative
-          conclusions: the threshold differences between BB and surface codes exceed the CI
+          The larger uncertainty on the toric code side does not affect qualitative
+          conclusions: the threshold differences between BB and toric codes exceed the CI
           overlap even under the asymmetric shot counts.
-    \item \textbf{Architectural comparison}: The overhead comparison between BB and surface
-          codes is not fully architecture-neutral. Surface codes are constrained to $K=2$ by
-          their local planar structure; BB codes are non-local. The $12\times$ overhead
+    \item \textbf{Architectural comparison}: The overhead comparison between BB and the toric
+          code is not fully architecture-neutral. The toric code has $K=2$ due to its periodic
+          boundary conditions (the planar surface code has $K=1$); BB codes are non-local.
+          The $12\times$ overhead
           figure should be interpreted as a difference in code efficiency within this
           comparison setting, not as a universal hardware advantage.
 \end{itemize}
@@ -477,14 +479,14 @@ which interpretation is right.
 We simulated bivariate bicycle codes on the quantum erasure channel and tackled two
 methodological issues that distort many QLDPC comparisons: decoder-baseline fairness and
 the confusion of pseudo-thresholds with asymptotic thresholds.
-Without erasure information, standard MWPM on the surface code matches random guessing in
+Without erasure information, standard MWPM on the toric code matches random guessing in
 our regime---so fair code comparisons need erasure-aware MWPM, and the old baseline
 systematically misleads.
 On that fair baseline, BB pseudo-thresholds run from $p^* = 0.370$ to $0.471$ for
 $N = 144$--$1296$ (95\% bootstrap CIs $\lesssim 0.001$), and FSS extrapolates
 $p^*_\infty \approx 0.488$ ($\pm 0.001$ stat, $\lesssim 0.005$ sys) with $\nu \approx 1.18$.
-BB has a small threshold edge and a 12$\times$ lower normalized overhead than surface
-codes in this setting.
+BB has a small threshold edge and a 12$\times$ lower normalized overhead than the toric
+code in this setting.
 
 The practical message: BB codes compete on the erasure channel mainly through qubit
 efficiency, not raw threshold.
