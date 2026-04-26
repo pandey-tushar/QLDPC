@@ -247,8 +247,8 @@ def main() -> int:
     }
     _FAM_LABEL = {
         "bivariate_bicycle":                   "BB",
-        "toric_surface_mwpm_erasure_aware":    "Surface (erasure-aware MWPM)",
-        "toric_surface_mwpm_uninformed":       "Surface (uninformed MWPM)",
+        "toric_surface_mwpm_erasure_aware":    "Toric (erasure-aware MWPM)",
+        "toric_surface_mwpm_uninformed":       "Toric (uninformed MWPM)",
     }
 
     def _fam_style(fam: str) -> dict:
@@ -411,11 +411,11 @@ def main() -> int:
         plt.figure(figsize=(figw * 0.9375, figh * 0.96))
         plt.plot(xsN, y_bb, marker="o", linewidth=1.5, label="Bivariate bicycle (data qubits per logical)")
         # Surface code baseline at same data-qubit count N: per-logical overhead = N (since k=1)
-        plt.plot(xsN, xsN, linestyle="--", linewidth=1.5, label="Rotated surface code baseline (k=1 ⇒ N per logical)")
+        plt.plot(xsN, xsN, linestyle="--", linewidth=1.5, label="Toric code baseline (k=1 ⇒ N per logical)")
         for x, y, lab in zip(xsN, y_bb, labs):
             plt.annotate(lab, (x, y), textcoords="offset points", xytext=(5, 5), fontsize=8)
         plt.yscale("log")
-        plt.title("Data qubits per logical vs N (surface baseline is k=1)")
+        plt.title("Data qubits per logical vs N (toric baseline is k=1)")
         plt.xlabel("N (data/physical qubits)")
         plt.ylabel("Data qubits per logical (log scale)")
         plt.grid(True, which="both", alpha=0.25)

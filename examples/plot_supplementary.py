@@ -3,7 +3,7 @@
 Generate four supplementary publication figures:
   1. Linearized FSS:  p* vs N^{-1/nu}  (linear extrapolation to p*_inf)
   2. Rate-threshold trade-off:  K/N vs p*  (Pareto scatter)
-  3. Overhead-threshold scatter:  N/K vs p*  (BB + surface codes)
+  3. Overhead-threshold scatter:  N/K vs p*  (BB + toric codes)
   4. Fraction of capacity:  p* / (1 - K/N)  vs N  (how close to Shannon limit)
 """
 from __future__ import annotations
@@ -146,7 +146,7 @@ def plot_rate_vs_threshold(out_path: Path) -> None:
                     xytext=(5, 4), fontsize=8, color=BB_COLOR)
 
     ax.scatter(sc_ps, sc_rates, color=SC_COLOR, s=50, marker="s",
-               zorder=5, label="Surface (erasure-aware MWPM)")
+               zorder=5, label="Toric (erasure-aware MWPM)")
     for x, y, lab in zip(sc_ps, sc_rates, sc_lab):
         ax.annotate(lab, (x, y), textcoords="offset points",
                     xytext=(5, -12), fontsize=8, color=SC_COLOR)
@@ -195,7 +195,7 @@ def plot_overhead_threshold(out_path: Path) -> None:
                     xytext=(5, 4), fontsize=7.5, color=BB_COLOR)
 
     ax.scatter(ps_sc, ov_sc, color=SC_COLOR, s=55, marker="s", zorder=5,
-               label="Surface (erasure-aware MWPM, $K=2$)")
+               label="Toric (erasure-aware MWPM, $K=2$)")
     for x, y, lab in zip(ps_sc, ov_sc, lab_sc):
         ax.annotate(lab, (x, y), textcoords="offset points",
                     xytext=(4, 5), fontsize=7.5, color=SC_COLOR)
@@ -215,7 +215,7 @@ def plot_overhead_threshold(out_path: Path) -> None:
     ax.set_yscale("log")
     ax.set_xlabel(r"Pseudo-threshold $p^*$", fontsize=11)
     ax.set_ylabel(r"Physical qubits per logical ($N/K$, log scale)", fontsize=11)
-    ax.set_title(r"Overhead vs.\ threshold: BB codes vs.\ surface codes", fontsize=11)
+    ax.set_title(r"Overhead vs.\ threshold: BB codes vs.\ toric codes", fontsize=11)
     ax.legend(loc="upper left", fontsize=8.5)
     fig.tight_layout()
     fig.savefig(out_path, format="pdf")
